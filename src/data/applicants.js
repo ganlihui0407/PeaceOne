@@ -1,0 +1,177 @@
+export const applicationStatuses = ['Pending', 'Reviewed', 'Shortlisted', 'Interview', 'Rejected']
+
+export const employerApplicants = [
+  {
+    id: 'daniel-lee',
+    fullName: 'Daniel Lee',
+    email: 'daniel.lee@peaceone.test',
+    phone: '016-882 1044',
+    educationLevel: "Bachelor's Degree",
+    fieldOfStudy: 'Business Analytics',
+    institution: "Taylor's University",
+    graduationYear: '2024',
+    experienceSummary:
+      'Recent graduate seeking analyst roles. Experience includes internship reporting, dashboard support and stakeholder communication.',
+    location: 'Petaling Jaya',
+    jobTitle: 'Data Analyst',
+    jobId: 'data-analyst',
+    company: 'Nexa Digital',
+    appliedDate: '18 Aug 2026',
+    compatibility: 86,
+    status: 'Shortlisted',
+    resumeFile: 'Daniel_Lee_Resume.pdf',
+    skills: [
+      { skillName: 'Python', proficiencyLevel: 'Advanced', verificationStatus: 'Verified' },
+      { skillName: 'SQL', proficiencyLevel: 'Intermediate', verificationStatus: 'Verified' },
+      { skillName: 'Statistics', proficiencyLevel: 'Intermediate', verificationStatus: 'Verified' },
+      { skillName: 'Excel', proficiencyLevel: 'Intermediate', verificationStatus: 'Verified' },
+    ],
+    matchResult: {
+      overallMatch: 86,
+      skillMatch: 88,
+      qualificationScore: 85,
+      experienceScore: 80,
+    },
+  },
+  {
+    id: 'aisha-rahman',
+    fullName: 'Aisha Rahman',
+    email: 'aisha.rahman@peaceone.test',
+    phone: '017-441 2290',
+    educationLevel: "Bachelor's Degree",
+    fieldOfStudy: 'Computer Science',
+    institution: 'Universiti Teknologi Malaysia',
+    graduationYear: '2025',
+    experienceSummary:
+      'Graduate with coursework in databases and reporting. Internship experience includes cleaning datasets and preparing weekly packs.',
+    location: 'Johor Bahru',
+    jobTitle: 'Data Analyst',
+    jobId: 'data-analyst',
+    company: 'Nexa Digital',
+    appliedDate: '18 Aug 2026',
+    compatibility: 82,
+    status: 'Reviewed',
+    resumeFile: 'Aisha_Rahman_Resume.pdf',
+    skills: [
+      { skillName: 'SQL', proficiencyLevel: 'Advanced', verificationStatus: 'Verified' },
+      { skillName: 'Python', proficiencyLevel: 'Intermediate', verificationStatus: 'Verified' },
+      { skillName: 'Communication', proficiencyLevel: 'Intermediate', verificationStatus: 'Pending' },
+      { skillName: 'Excel', proficiencyLevel: 'Advanced', verificationStatus: 'Verified' },
+    ],
+    matchResult: {
+      overallMatch: 82,
+      skillMatch: 84,
+      qualificationScore: 86,
+      experienceScore: 74,
+    },
+  },
+  {
+    id: 'marcus-tan',
+    fullName: 'Marcus Tan',
+    email: 'marcus.tan@peaceone.test',
+    phone: '012-773 1188',
+    educationLevel: "Bachelor's Degree",
+    fieldOfStudy: 'Information Systems',
+    institution: 'Universiti Malaya',
+    graduationYear: '2025',
+    experienceSummary:
+      'Final-year graduate with project work in reporting dashboards and introductory Python. Looking for a first full-time analyst role.',
+    location: 'Kuala Lumpur',
+    jobTitle: 'Data Analyst',
+    jobId: 'data-analyst',
+    company: 'Nexa Digital',
+    appliedDate: '17 Aug 2026',
+    compatibility: 78,
+    status: 'Pending',
+    resumeFile: 'Marcus_Tan_Resume.pdf',
+    skills: [
+      { skillName: 'Python', proficiencyLevel: 'Intermediate', verificationStatus: 'Verified' },
+      { skillName: 'SQL', proficiencyLevel: 'Beginner', verificationStatus: 'Pending' },
+      { skillName: 'Excel', proficiencyLevel: 'Intermediate', verificationStatus: 'Verified' },
+    ],
+    matchResult: {
+      overallMatch: 78,
+      skillMatch: 76,
+      qualificationScore: 82,
+      experienceScore: 70,
+    },
+  },
+  {
+    id: 'nur-izzati',
+    fullName: 'Nur Izzati',
+    email: 'nur.izzati@peaceone.test',
+    phone: '019-330 6721',
+    educationLevel: "Bachelor's Degree",
+    fieldOfStudy: 'Statistics',
+    institution: 'Universiti Putra Malaysia',
+    graduationYear: '2023',
+    experienceSummary:
+      'One year of reporting support in an operations team. Comfortable with statistics, Excel and preparing stakeholder summaries.',
+    location: 'Serdang',
+    jobTitle: 'Data Analyst',
+    jobId: 'data-analyst',
+    company: 'Nexa Digital',
+    appliedDate: '16 Aug 2026',
+    compatibility: 76,
+    status: 'Interview',
+    resumeFile: 'Nur_Izzati_Resume.pdf',
+    skills: [
+      { skillName: 'Statistics', proficiencyLevel: 'Advanced', verificationStatus: 'Verified' },
+      { skillName: 'Excel', proficiencyLevel: 'Advanced', verificationStatus: 'Verified' },
+      { skillName: 'SQL', proficiencyLevel: 'Intermediate', verificationStatus: 'Verified' },
+      { skillName: 'Communication', proficiencyLevel: 'Intermediate', verificationStatus: 'Verified' },
+    ],
+    matchResult: {
+      overallMatch: 76,
+      skillMatch: 80,
+      qualificationScore: 78,
+      experienceScore: 72,
+    },
+  },
+  {
+    id: 'marcus-tan-developer',
+    fullName: 'Marcus Tan',
+    email: 'marcus.tan@peaceone.test',
+    phone: '012-773 1188',
+    educationLevel: "Bachelor's Degree",
+    fieldOfStudy: 'Information Systems',
+    institution: 'Universiti Malaya',
+    graduationYear: '2025',
+    experienceSummary:
+      'Project work includes introductory JavaScript features and internal documentation. Seeking a junior software role alongside analyst applications.',
+    location: 'Kuala Lumpur',
+    jobTitle: 'Junior Software Developer',
+    jobId: 'junior-software-developer',
+    company: 'Nexa Digital',
+    appliedDate: '17 Aug 2026',
+    compatibility: 79,
+    status: 'Pending',
+    resumeFile: 'Marcus_Tan_Resume.pdf',
+    skills: [
+      { skillName: 'JavaScript', proficiencyLevel: 'Beginner', verificationStatus: 'Pending' },
+      { skillName: 'Problem Solving', proficiencyLevel: 'Intermediate', verificationStatus: 'Verified' },
+      { skillName: 'SQL', proficiencyLevel: 'Beginner', verificationStatus: 'Pending' },
+    ],
+    matchResult: {
+      overallMatch: 79,
+      skillMatch: 74,
+      qualificationScore: 84,
+      experienceScore: 68,
+    },
+  },
+]
+
+export const recentEmployerApplications = [
+  employerApplicants[0],
+  employerApplicants[1],
+  employerApplicants[4],
+]
+
+export function getEmployerApplicant(applicationId) {
+  return employerApplicants.find((item) => item.id === applicationId)
+}
+
+export const applicantJobFilters = [
+  'All',
+  ...Array.from(new Set(employerApplicants.map((item) => item.jobTitle))),
+]
