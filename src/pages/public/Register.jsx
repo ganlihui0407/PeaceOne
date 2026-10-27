@@ -10,6 +10,9 @@ import SelectInput from '../../components/forms/SelectInput.jsx'
 import Checkbox from '../../components/forms/Checkbox.jsx'
 import { images } from '../../data/images.js'
 import { cn } from '../../utils/cn.js'
+import { useAuth } from '../../auth/useAuth.js'
+import { dashboardForRole } from '../../auth/rolePaths.js'
+import { ApiError } from '../../api/client.js'
 
 const roles = [
   {
@@ -29,15 +32,9 @@ const roles = [
   },
 ]
 
-const destinations = {
-  student: '/student/dashboard',
-  jobseeker: '/jobseeker/dashboard',
-  employer: '/employer/dashboard',
-  admin: '/admin/dashboard',
-}
-
 function Register() {
   const navigate = useNavigate()
+  const { register } = useAuth()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -47,9 +44,11 @@ function Register() {
   const [currentPosition, setCurrentPosition] = useState('student')
   const [terms, setTerms] = useState(false)
   const [errors, setErrors] = useState({})
+  const [formError, setFormError] = useState('')
   const [toast, setToast] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     const nextErrors = {}
 
@@ -62,18 +61,50 @@ function Register() {
     }
 
     setErrors(nextErrors)
+    setFormError('')
 
     if (Object.keys(nextErrors).length > 0) {
       return
     }
 
-    const destination =
-      role === 'student-jobseeker'
-        ? destinations[currentPosition]
-        : destinations[role]
+    setSubmitting(true)
 
-    setToast('Account created successfully. Welcome to PeaceOne.')
-    window.setTimeout(() => navigate(destination || '/student/dashboard'), 1200)
+    try {
+      const body = {
+        fullName,
+        email,
+        password,
+        confirmPassword,
+        role,
+        terms: true,
+      }
+      if (phone.trim()) {
+        body.phone = phone.trim()
+      }
+      if (role === 'student-jobseeker') {
+        body.currentPosition = currentPosition
+      }
+
+      const user = await register(body)
+      setToast('Account created successfully. Welcome to PeaceOne.')
+      window.setTimeout(() => navigate(dashboardForRole(user.role)), 1200)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 409) {
+          setFormError(err.message)
+        } else if (err.status === 403) {
+          setFormError(err.message)
+        } else if (err.status === 400) {
+          setFormError('Please check the registration details and try again.')
+        } else {
+          setFormError(err.message)
+        }
+      } else {
+        setFormError('Unable to create an account right now.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -96,6 +127,7 @@ function Register() {
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
                   autoComplete="name"
+                  required
                 />
                 <TextInput
                   id="register-email"
@@ -104,6 +136,7 @@ function Register() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   autoComplete="email"
+                  required
                 />
                 <PasswordInput
                   id="register-password"
@@ -111,6 +144,7 @@ function Register() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="new-password"
+                  required
                 />
                 <PasswordInput
                   id="confirm-password"
@@ -119,6 +153,7 @@ function Register() {
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   error={errors.confirmPassword}
                   autoComplete="new-password"
+                  required
                 />
                 <div className="md:col-span-2">
                   <TextInput
@@ -209,9 +244,15 @@ function Register() {
                 error={errors.terms}
               />
 
+              {formError ? (
+                <p className="po-helper po-helper-error mt-4" role="alert">
+                  {formError}
+                </p>
+              ) : null}
+
               <div className="mt-6">
-                <Button type="submit" size="lg" className="w-full sm:w-auto">
-                  Create Account
+                <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting}>
+                  {submitting ? 'Creating account…' : 'Create Account'}
                 </Button>
               </div>
             </Card>

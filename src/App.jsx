@@ -46,14 +46,17 @@ import CandidateJobDetailPage from './pages/shared/CandidateJobDetailPage.jsx'
 import ApplyPage from './pages/shared/ApplyPage.jsx'
 import ApplicationsPage from './pages/shared/ApplicationsPage.jsx'
 import InterviewsPage from './pages/shared/InterviewsPage.jsx'
-import ModulePlaceholder from './pages/shared/ModulePlaceholder.jsx'
+import SettingsPage from './pages/shared/SettingsPage.jsx'
 import DesignSystem from './pages/DesignSystem.jsx'
+import { AuthProvider } from './auth/AuthContext.jsx'
+import { RequireAuth } from './auth/RequireAuth.jsx'
 import { jobSeekerProfile, studentProfile } from './data/candidateData.js'
 import { adminNotifications, employerNotifications, jobSeekerNotifications, studentNotifications } from './data/notifications.js'
 
 function App() {
   return (
     <BrowserRouter>
+      <AuthProvider>
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
@@ -65,7 +68,14 @@ function App() {
           <Route path="/register" element={<Register />} />
         </Route>
 
-        <Route path="/student" element={<CandidateLayout role="student" />}>
+        <Route
+          path="/student"
+          element={
+            <RequireAuth roles={['STUDENT']}>
+              <CandidateLayout role="student" />
+            </RequireAuth>
+          }
+        >
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="profile" element={<ProfilePage profile={studentProfile} />} />
           <Route path="notifications" element={<NotificationsPage items={studentNotifications} />} />
@@ -80,10 +90,17 @@ function App() {
           <Route path="jobs/:jobId" element={<CandidateJobDetailPage basePath="/student" variant="student" />} />
           <Route path="jobs/:jobId/apply" element={<ApplyPage basePath="/student" variant="student" />} />
           <Route path="applications" element={<ApplicationsPage variant="student" />} />
-          <Route path="settings" element={<ModulePlaceholder title="Settings" />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
-        <Route path="/jobseeker" element={<CandidateLayout role="jobseeker" />}>
+        <Route
+          path="/jobseeker"
+          element={
+            <RequireAuth roles={['JOB_SEEKER']}>
+              <CandidateLayout role="jobseeker" />
+            </RequireAuth>
+          }
+        >
           <Route path="dashboard" element={<JobSeekerDashboard />} />
           <Route path="profile" element={<ProfilePage profile={jobSeekerProfile} />} />
           <Route path="notifications" element={<NotificationsPage items={jobSeekerNotifications} />} />
@@ -99,10 +116,17 @@ function App() {
           <Route path="learning" element={<LearningRecommendationsPage basePath="/jobseeker" />} />
           <Route path="learning/progress" element={<LearningProgressPage basePath="/jobseeker" />} />
           <Route path="learning/:contentId" element={<LearningDetailPage basePath="/jobseeker" />} />
-          <Route path="settings" element={<ModulePlaceholder title="Settings" />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
-        <Route path="/employer" element={<EmployerLayout />}>
+        <Route
+          path="/employer"
+          element={
+            <RequireAuth roles={['COMPANY_STAFF']}>
+              <EmployerLayout />
+            </RequireAuth>
+          }
+        >
           <Route path="dashboard" element={<EmployerDashboard />} />
           <Route path="company" element={<CompanyProfile />} />
           <Route path="profile" element={<StaffProfile />} />
@@ -116,10 +140,17 @@ function App() {
           <Route path="interviews/create" element={<InterviewFormPage />} />
           <Route path="interviews/:interviewId/edit" element={<InterviewFormPage />} />
           <Route path="notifications" element={<NotificationsPage items={employerNotifications} />} />
-          <Route path="settings" element={<ModulePlaceholder title="Settings" />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth roles={['ADMIN']}>
+              <AdminLayout />
+            </RequireAuth>
+          }
+        >
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:userId" element={<AdminUserDetails />} />
@@ -132,11 +163,12 @@ function App() {
           <Route path="reports" element={<AdminReports />} />
           <Route path="notifications" element={<NotificationsPage items={adminNotifications} />} />
           <Route path="profile" element={<AdminProfile />} />
-          <Route path="settings" element={<ModulePlaceholder title="Settings" />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
         <Route path="/design-system" element={<DesignSystem />} />
       </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

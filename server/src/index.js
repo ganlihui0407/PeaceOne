@@ -1,6 +1,7 @@
 import { config } from './config.js';
 import { createApp } from './app.js';
 import { disconnectDatabase } from './db.js';
+import { closeSessionStore } from './lib/session.js';
 
 const app = createApp();
 
@@ -11,7 +12,7 @@ const server = app.listen(config.port, '127.0.0.1', () => {
 async function shutdown(signal) {
   console.log(`Received ${signal}, shutting down`);
   server.close(async () => {
-    await disconnectDatabase();
+    await Promise.all([disconnectDatabase(), closeSessionStore()]);
     process.exit(0);
   });
 }

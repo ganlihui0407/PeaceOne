@@ -19,4 +19,7 @@ export const config = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number.isInteger(port) && port > 0 ? port : 3001,
   databaseUrl: required('DATABASE_URL'),
+  sessionSecret: required('SESSION_SECRET'),
+  csrfSecret: required('CSRF_SECRET'),
+  sessionCookieSecure: process.env.SESSION_COOKIE_SECURE === 'true',
 };

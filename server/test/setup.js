@@ -1,0 +1,1 @@
+process.env.PEACEONE_DISABLE_AUTH_RATE_LIMIT = 'true';

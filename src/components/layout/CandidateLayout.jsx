@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import AppLayout from './AppLayout.jsx'
-import { studentProfile, jobSeekerProfile } from '../../data/candidateData.js'
+import { useAuth } from '../../auth/useAuth.js'
+import { roleLabels } from '../../auth/rolePaths.js'
 import { jobSeekerNav, studentNav } from '../../data/navigation.js'
 
 const pageTitles = {
@@ -31,15 +32,15 @@ function getPageTitle(pathname) {
 
 function CandidateLayout({ role }) {
   const { pathname } = useLocation()
+  const { user } = useAuth()
   const isStudent = role === 'student'
-  const profile = isStudent ? studentProfile : jobSeekerProfile
   const base = isStudent ? '/student' : '/jobseeker'
 
   return (
     <AppLayout
       title={getPageTitle(pathname)}
-      userName={profile.fullName}
-      userRole={profile.currentPosition}
+      userName={user?.fullName || 'PeaceOne user'}
+      userRole={roleLabels[user?.role] || (isStudent ? 'Student' : 'Job Seeker')}
       navItems={isStudent ? studentNav : jobSeekerNav}
       settingsTo={`${base}/settings`}
       notificationTo={`${base}/notifications`}

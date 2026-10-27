@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import AppLayout from './AppLayout.jsx'
-import { employerStaff } from '../../data/employerStaff.js'
+import { useAuth } from '../../auth/useAuth.js'
+import { roleLabels } from '../../auth/rolePaths.js'
 import { employerNav } from '../../data/navigation.js'
 
 function getPageTitle(pathname) {
@@ -28,12 +29,13 @@ function getPageTitle(pathname) {
 
 function EmployerLayout() {
   const { pathname } = useLocation()
+  const { user } = useAuth()
 
   return (
     <AppLayout
       title={getPageTitle(pathname)}
-      userName={employerStaff.fullName}
-      userRole={employerStaff.position}
+      userName={user?.fullName || 'PeaceOne user'}
+      userRole={roleLabels[user?.role] || 'Company Staff'}
       navItems={employerNav}
       settingsTo="/employer/settings"
       notificationTo="/employer/notifications"

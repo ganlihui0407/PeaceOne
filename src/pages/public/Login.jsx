@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Button from '../../components/common/Button.jsx'
 import Card from '../../components/cards/Card.jsx'
 import MediaImage from '../../components/common/MediaImage.jsx'
@@ -8,24 +8,43 @@ import PasswordInput from '../../components/forms/PasswordInput.jsx'
 import SelectInput from '../../components/forms/SelectInput.jsx'
 import Checkbox from '../../components/forms/Checkbox.jsx'
 import { images } from '../../data/images.js'
-
-const demoDestinations = {
-  student: '/student/dashboard',
-  jobseeker: '/jobseeker/dashboard',
-  employer: '/employer/dashboard',
-  admin: '/admin/dashboard',
-}
+import { useAuth } from '../../auth/useAuth.js'
+import { dashboardForRole } from '../../auth/rolePaths.js'
+import { ApiError } from '../../api/client.js'
 
 function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [demoRole, setDemoRole] = useState('student')
   const [remember, setRemember] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    navigate(demoDestinations[demoRole] || '/student/dashboard')
+    setFormError('')
+    setSubmitting(true)
+
+    try {
+      const user = await login({
+        email,
+        password,
+        rememberMe: remember,
+      })
+      const from = location.state?.from
+      navigate(from || dashboardForRole(user.role), { replace: true })
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setFormError(err.message)
+      } else {
+        setFormError('Unable to sign in right now.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -57,6 +76,7 @@ function Login() {
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                required
               />
               <PasswordInput
                 id="login-password"
@@ -64,13 +84,14 @@ function Login() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
+                required
               />
               <SelectInput
                 id="demo-role"
                 label="Login as"
                 value={demoRole}
                 onChange={(event) => setDemoRole(event.target.value)}
-                helperText="Choose a workspace to preview. This demonstration does not check a password."
+                helperText="Your account role determines the workspace. This selector is not used for access."
                 options={[
                   { value: 'student', label: 'Student' },
                   { value: 'jobseeker', label: 'Job Seeker' },
@@ -93,8 +114,13 @@ function Login() {
               <p id="forgot-password" className="po-helper mt-0">
                 Password recovery is not available in this prototype.
               </p>
-              <Button type="submit" className="w-full" size="lg">
-                Login
+              {formError ? (
+                <p className="po-helper po-helper-error mt-0" role="alert">
+                  {formError}
+                </p>
+              ) : null}
+              <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                {submitting ? 'Signing in…' : 'Login'}
               </Button>
             </form>
 
