@@ -10,21 +10,28 @@ import Checkbox from '../../components/forms/Checkbox.jsx'
 import { images } from '../../data/images.js'
 import { useAuth } from '../../auth/useAuth.js'
 import { dashboardForRole } from '../../auth/rolePaths.js'
+import { ACCOUNT_UNAVAILABLE_MESSAGE } from '../../auth/sessionStatus.js'
 import { ApiError } from '../../api/client.js'
 
 function Login() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login } = useAuth()
+  const { login, sessionNotice } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [demoRole, setDemoRole] = useState('student')
   const [remember, setRemember] = useState(false)
   const [formError, setFormError] = useState('')
+  const [noticeDismissed, setNoticeDismissed] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const showUnavailableNotice =
+    !noticeDismissed &&
+    (location.state?.accountNotice === 'unavailable' || sessionNotice === 'unavailable')
+  const displayedError = formError || (showUnavailableNotice ? ACCOUNT_UNAVAILABLE_MESSAGE : '')
 
   async function handleSubmit(event) {
     event.preventDefault()
+    setNoticeDismissed(true)
     setFormError('')
     setSubmitting(true)
 
@@ -34,7 +41,7 @@ function Login() {
         password,
         rememberMe: remember,
       })
-      const from = location.state?.from
+      const from = location.state?.accountNotice === 'unavailable' ? undefined : location.state?.from
       navigate(from || dashboardForRole(user.role), { replace: true })
     } catch (err) {
       if (err instanceof ApiError) {
@@ -114,9 +121,9 @@ function Login() {
               <p id="forgot-password" className="po-helper mt-0">
                 Password recovery is not available in this prototype.
               </p>
-              {formError ? (
+              {displayedError ? (
                 <p className="po-helper po-helper-error mt-0" role="alert">
-                  {formError}
+                  {displayedError}
                 </p>
               ) : null}
               <Button type="submit" className="w-full" size="lg" disabled={submitting}>

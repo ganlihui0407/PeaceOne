@@ -9,7 +9,7 @@
     "dev": "node --watch src/index.js",
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev",
-    "test": "node --import ./test/setup.js --test test/session-csrf.test.js test/auth.test.js",
+    "test": "node --import ./test/setup.js --test test/session-csrf.test.js test/auth.test.js test/authorization.test.js test/security.test.js test/rate-limit.test.js",
     "prisma:generate": "prisma generate",
     "db:up": "docker compose -f ../docker-compose.yml --env-file .env up -d",
     "db:stop": "docker compose -f ../docker-compose.yml --env-file .env stop"

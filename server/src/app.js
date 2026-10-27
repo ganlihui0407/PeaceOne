@@ -6,7 +6,7 @@ import { doubleCsrfProtection, generateCsrfToken, isCsrfError } from './lib/csrf
 import { apiRateLimit } from './middleware/rateLimit.js';
 import { authRouter } from './routes/auth.js';
 
-export function createApp() {
+export function createApp(options = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -44,6 +44,10 @@ export function createApp() {
   app.use(doubleCsrfProtection);
   app.use('/api/auth', authRouter);
 
+  if (typeof options.registerTestRoutes === 'function') {
+    options.registerTestRoutes(app);
+  }
+
   app.use((req, res) => {
     res.status(404).json({ error: 'Not found', path: req.path });
   });
@@ -51,6 +55,16 @@ export function createApp() {
   app.use((err, req, res, _next) => {
     if (isCsrfError(err)) {
       res.status(403).json({ error: 'Invalid CSRF token' });
+      return;
+    }
+
+    if (err?.type === 'entity.too.large' || err?.status === 413) {
+      res.status(413).json({ error: 'Request too large' });
+      return;
+    }
+
+    if (err?.type === 'entity.parse.failed' || (err instanceof SyntaxError && err.status === 400)) {
+      res.status(400).json({ error: 'Invalid request' });
       return;
     }
 

@@ -1,12 +1,14 @@
+import { interpretCurrentUserError } from '../auth/sessionStatus.js'
 import { apiRequest, clearCsrfToken } from './client.js'
 
 export async function fetchCurrentUser() {
   try {
     const payload = await apiRequest('/api/auth/me')
-    return payload?.user ?? null
+    return { user: payload?.user ?? null, status: 'ok' }
   } catch (err) {
-    if (err.status === 401) {
-      return null
+    const status = interpretCurrentUserError(err)
+    if (status === 'unauthenticated' || status === 'unavailable') {
+      return { user: null, status }
     }
     throw err
   }

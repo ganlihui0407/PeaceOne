@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "test:auth": "node --test src/auth/sessionStatus.test.js src/api/auth.session.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

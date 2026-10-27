@@ -11,7 +11,7 @@ function AuthLoading() {
 }
 
 export function RequireAuth({ roles, children }) {
-  const { user, ready } = useAuth()
+  const { user, ready, sessionNotice } = useAuth()
   const location = useLocation()
 
   if (!ready) {
@@ -19,6 +19,9 @@ export function RequireAuth({ roles, children }) {
   }
 
   if (!user) {
+    if (sessionNotice === 'unavailable') {
+      return <Navigate to="/login" replace state={{ accountNotice: 'unavailable' }} />
+    }
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
