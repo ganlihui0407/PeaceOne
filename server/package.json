@@ -1,0 +1,29 @@
+{
+  "name": "peaceone-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "PeaceOne backend API (Stage 3 foundation)",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "prisma:validate": "prisma validate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "db:up": "docker compose -f ../docker-compose.yml --env-file .env up -d",
+    "db:stop": "docker compose -f ../docker-compose.yml --env-file .env stop"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^6.19.3",
+    "@prisma/client": "^6.19.3",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.3"
+  }
+}

@@ -1,0 +1,217 @@
+{
+  "dataset": "ESCO classification English CSV",
+  "version_from_filename": "v1.2.1",
+  "official_source": "https://esco.ec.europa.eu/en/use-esco/download",
+  "licence": "Commission Decision 2011/833/EU; acknowledge ESCO; mark modified versions",
+  "attribution_application": "This service uses the ESCO classification of the European Commission.",
+  "archive_filename": "ESCO dataset - v1.2.1 - classification - en - csv.zip",
+  "archive_last_write_local": "2026-10-28T00:25:10",
+  "validation_timestamp_local": "2026-10-28T00:31:47",
+  "headers": {
+    "occupations_en.csv": [
+      "conceptType",
+      "conceptUri",
+      "iscoGroup",
+      "preferredLabel",
+      "altLabels",
+      "hiddenLabels",
+      "status",
+      "modifiedDate",
+      "regulatedProfessionNote",
+      "scopeNote",
+      "definition",
+      "inScheme",
+      "description",
+      "code",
+      "naceCode"
+    ],
+    "skills_en.csv": [
+      "conceptType",
+      "conceptUri",
+      "skillType",
+      "reuseLevel",
+      "preferredLabel",
+      "altLabels",
+      "hiddenLabels",
+      "status",
+      "modifiedDate",
+      "scopeNote",
+      "definition",
+      "inScheme",
+      "description"
+    ],
+    "occupationSkillRelations_en.csv": [
+      "occupationUri",
+      "occupationLabel",
+      "relationType",
+      "skillType",
+      "skillUri",
+      "skillLabel"
+    ]
+  },
+  "counts": {
+    "occupations_rows": 3043,
+    "skills_rows": 13960,
+    "occupation_skill_relations_rows": 126051,
+    "isco_groups_rows": 619,
+    "skill_groups_rows": 640,
+    "unique_occupation_conceptUri": 3039,
+    "unique_skill_conceptUri": 13939
+  },
+  "quality": {
+    "occupations_duplicate_conceptUri_values": 4,
+    "occupations_duplicate_examples": [
+      "http://data.europa.eu/esco/occupation/4d27152a-a8ee-4f5a-9f93-a2fb4fb2b2e3",
+      "http://data.europa.eu/esco/occupation/5d601b40-7e0e-404e-bbff-bb98e147437c",
+      "http://data.europa.eu/esco/occupation/ad404c6b-291f-439e-9ad4-c93ddabd3c13",
+      "http://data.europa.eu/esco/occupation/b4bff870-5c8f-4c33-b07f-f04d79830633"
+    ],
+    "occupations_missing": {
+      "conceptUri": 0,
+      "preferredLabel": 0,
+      "conceptType": 0,
+      "status": 0
+    },
+    "occupations_status": {
+      "released": 3043
+    },
+    "skills_duplicate_conceptUri_values": 21,
+    "skills_duplicate_examples": [
+      "http://data.europa.eu/esco/skill/11dc8e6b-dffa-42e4-9de1-c47293a848ff",
+      "http://data.europa.eu/esco/skill/1258cc12-37bb-4a12-b219-9c3d6b294533",
+      "http://data.europa.eu/esco/skill/1330576d-b3c7-4776-94cb-b7bd92d62993",
+      "http://data.europa.eu/esco/skill/19c610ff-f8eb-44e1-9f83-0e130303643c",
+      "http://data.europa.eu/esco/skill/1b9899a4-5b50-44b0-a21a-e2f86c51ac5a"
+    ],
+    "skills_missing": {
+      "conceptUri": 0,
+      "preferredLabel": 0,
+      "conceptType": 0,
+      "status": 0
+    },
+    "skills_status": {
+      "released": 13960
+    },
+    "relations_missing_occupationUri": 0,
+    "relations_missing_skillUri": 0,
+    "relations_occupationUri_not_in_occupations_en": 0,
+    "relations_occupationUri_not_in_occupations_or_ISCOGroups": 0,
+    "relations_skillUri_not_in_skills_en": 0,
+    "relations_skillUri_not_in_skills_or_skillGroups": 0,
+    "relationType_counts": {
+      "essential": 67600,
+      "optional": 58451
+    },
+    "relation_skillType_counts": {
+      "knowledge": 34384,
+      "skill/competence": 91608,
+      "(empty)": 59
+    },
+    "sample_occupationUri_unresolved": [],
+    "sample_skillUri_unresolved": []
+  },
+  "hashes": {
+    "archive": {
+      "path": "reference\\esco\\original\\ESCO dataset - v1.2.1 - classification - en - csv.zip",
+      "sha256": "f9761b0b52be1828b38a3e5e0ae59a93a7b0ce358bc800f52f57a8b002adeb3e",
+      "bytes": 10045670
+    },
+    "extracted_files": [
+      {
+        "file": "broaderRelationsOccPillar_en.csv",
+        "bytes": 730008,
+        "sha256": "b6b457a7b248e87734a5ef01f59f0bd4d083b6ad5e9251f6ed4cce51d69c6383"
+      },
+      {
+        "file": "broaderRelationsSkillPillar_en.csv",
+        "bytes": 4944592,
+        "sha256": "56b70f4852b1f53c6192c979310c34c93f95436621d907083cf0d55b51d8e42d"
+      },
+      {
+        "file": "conceptSchemes_en.csv",
+        "bytes": 941042,
+        "sha256": "4e5b4800e6cdc2013df0f22dfff72c0499cdce8bf9cfa333d6c4c14879dce517"
+      },
+      {
+        "file": "dictionary_en.csv",
+        "bytes": 19719,
+        "sha256": "f20857239063a52af0a7668ae5b178144cb33ff626519fb50451457d59b54fec"
+      },
+      {
+        "file": "digCompSkillsCollection_en.csv",
+        "bytes": 18759,
+        "sha256": "814108ed9bc93268abc6d717bbd36f876a73180da2ff1a89b4f867c50e1ae9d4"
+      },
+      {
+        "file": "digitalSkillsCollection_en.csv",
+        "bytes": 811101,
+        "sha256": "9f2ee9179f0720826cbfc65627bd3642926ba4dfb3bf29250f22cb232c225b1e"
+      },
+      {
+        "file": "greenShareOcc_en.csv",
+        "bytes": 452849,
+        "sha256": "b181bde83460dbd766268893dd6db4393006c15d788ae4c0f3f41c49719ab16a"
+      },
+      {
+        "file": "greenSkillsCollection_en.csv",
+        "bytes": 455125,
+        "sha256": "502eaee4f496e7576ee078a76d5da03fa14f5476f740ca965ca2ef596d9683ab"
+      },
+      {
+        "file": "ISCOGroups_en.csv",
+        "bytes": 966601,
+        "sha256": "7a829bb6fddccbdb028d3ae69d822f2f1ba581522667f6185949c6d0788eaa1c"
+      },
+      {
+        "file": "languageSkillsCollection_en.csv",
+        "bytes": 144359,
+        "sha256": "93b2ca9ef1300a34c2262753e33dbcf6a3a17ad7d2afe435849649818ec6cf33"
+      },
+      {
+        "file": "occupations_en.csv",
+        "bytes": 3047703,
+        "sha256": "8034348d84b6d1dd24a5bcf9609186ecbba0a85457ee2eacd65bddec33a51b4a"
+      },
+      {
+        "file": "occupationSkillRelations_en.csv",
+        "bytes": 27986628,
+        "sha256": "e1a46511f0ef4d505f106f1d41f528ef76d289f93e59d4d0cbaac38986102c44"
+      },
+      {
+        "file": "researchOccupationsCollection_en.csv",
+        "bytes": 126900,
+        "sha256": "85993f6460b6bb008985cd40341c3d373fac9989d854f76d2d3c6fc8dc2d6d1a"
+      },
+      {
+        "file": "researchSkillsCollection_en.csv",
+        "bytes": 27033,
+        "sha256": "fd9b6bd45df2bad68e50d963ac366b5c7dec2917e178e69003b6d94bb1e41d13"
+      },
+      {
+        "file": "skillGroups_en.csv",
+        "bytes": 340935,
+        "sha256": "644b68a174299eb05336eec36e0716c4671a0c6bdd4ac268803ecd6533dc739d"
+      },
+      {
+        "file": "skills_en.csv",
+        "bytes": 9302000,
+        "sha256": "d03b10efca94b4bcfa260a992cfde89c375f0fa12095d6662a663cfd2f9f2950"
+      },
+      {
+        "file": "skillsHierarchy_en.csv",
+        "bytes": 381733,
+        "sha256": "295133872c6be7b7560de943efa4a6aab833a1b15af4d60c03b050ab0a75edcb"
+      },
+      {
+        "file": "skillSkillRelations_en.csv",
+        "bytes": 1031275,
+        "sha256": "64a5f8fb7b8dda4932ff06db4738ce1beed3906e45a49b14453349056c609439"
+      },
+      {
+        "file": "transversalSkillsCollection_en.csv",
+        "bytes": 57293,
+        "sha256": "40bd1884f1c62b91ab86b6c87d7fab11b082c17b425975d0d178d1b5cb5e01ca"
+      }
+    ]
+  }
+}

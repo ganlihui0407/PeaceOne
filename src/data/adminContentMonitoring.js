@@ -1,0 +1,38 @@
+export const adminContentMonitoring = [
+  {
+    id: 'cm-ux-job',
+    content: 'UI/UX Designer',
+    contentType: 'Job Posting',
+    submittedBy: 'Nexa Digital',
+    reason: 'Salary range may be incomplete or misleading.',
+    status: 'Flagged',
+    date: '20 Aug 2026',
+  },
+  {
+    id: 'cm-ml-content',
+    content: 'Introduction to Machine Learning',
+    contentType: 'Learning Content',
+    submittedBy: 'PeaceOne Library',
+    reason: 'Resource URL needs a quality check before remaining Active.',
+    status: 'Pending Review',
+    date: '19 Aug 2026',
+  },
+  {
+    id: 'cm-bi-job',
+    content: 'Business Intelligence Intern',
+    contentType: 'Job Posting',
+    submittedBy: 'BrightWave',
+    reason: 'Internship allowance wording was flagged for review.',
+    status: 'Flagged',
+    date: '18 Aug 2026',
+  },
+  {
+    id: 'cm-excel',
+    content: 'Excel for Business Decisions',
+    contentType: 'Learning Content',
+    submittedBy: 'PeaceOne Library',
+    reason: 'Older material marked for archive review.',
+    status: 'Pending Review',
+    date: '16 Aug 2026',
+  },
+]

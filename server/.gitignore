@@ -1,0 +1,29 @@
+node_modules
+dist
+build
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Uploads and private user files
+uploads/
+storage/uploads/
+
+# Logs, coverage and temporary files
+logs
+*.log
+coverage/
+.nyc_output/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db

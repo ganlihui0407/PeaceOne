@@ -1,0 +1,96 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  JOB_SEEKER
+  COMPANY_STAFF
+  ADMIN
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  role         UserRole
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  skills       UserSkill[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model Occupation {
+  id             String   @id @default(uuid()) @db.Uuid
+  sourceSystem   String   @default("ESCO") @map("source_system")
+  sourceUri      String   @unique @map("source_uri")
+  preferredLabel String   @map("preferred_label")
+  sourceMetadata Json?    @map("source_metadata")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  skillRelations OccupationSkillRelation[]
+
+  @@index([preferredLabel])
+  @@index([sourceSystem])
+  @@map("occupations")
+}
+
+model Skill {
+  id             String   @id @default(uuid()) @db.Uuid
+  sourceSystem   String   @default("ESCO") @map("source_system")
+  sourceUri      String   @unique @map("source_uri")
+  preferredLabel String   @map("preferred_label")
+  skillType      String?  @map("skill_type")
+  sourceMetadata Json?    @map("source_metadata")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  occupationRelations OccupationSkillRelation[]
+  userSkills     UserSkill[]
+
+  @@index([preferredLabel])
+  @@index([skillType])
+  @@index([sourceSystem])
+  @@map("skills")
+}
+
+model OccupationSkillRelation {
+  id             String   @id @default(uuid()) @db.Uuid
+  occupationId   String   @map("occupation_id") @db.Uuid
+  skillId        String   @map("skill_id") @db.Uuid
+  relationType   String   @map("relation_type")
+  sourceSystem   String   @default("ESCO") @map("source_system")
+  sourceMetadata Json?    @map("source_metadata")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  occupation     Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  skill          Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([occupationId, skillId, relationType])
+  @@index([skillId])
+  @@index([occupationId])
+  @@map("occupation_skill_relations")
+}
+
+model UserSkill {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  skillId          String   @map("skill_id") @db.Uuid
+  proficiencyLevel String   @map("proficiency_level")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill            Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@index([skillId])
+  @@index([userId])
+  @@map("user_skills")
+}
