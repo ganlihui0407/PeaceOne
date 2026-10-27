@@ -24,6 +24,7 @@ build
 # ESCO raw dataset (keep MANIFEST.json, STATUS.md, VALIDATION.md)
 /data/reference/esco/original/
 /data/reference/esco/extracted/
+/data/reference/esco/imports/
 
 # Uploads and private user files
 uploads/
