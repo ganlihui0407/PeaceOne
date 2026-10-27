@@ -28,13 +28,16 @@ model User {
   phone            String?
   role             UserRole
   accountStatus    AccountStatus @default(ACTIVE) @map("account_status")
-  termsAcceptedAt  DateTime?     @map("terms_accepted_at")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
-  skills           UserSkill[]
+  termsAcceptedAt    DateTime?     @map("terms_accepted_at")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  targetOccupationId String?       @map("target_occupation_id") @db.Uuid
+  targetOccupation   Occupation?   @relation("UserCareerTarget", fields: [targetOccupationId], references: [id], onDelete: SetNull)
+  skills             UserSkill[]
 
   @@index([role])
   @@index([accountStatus])
+  @@index([targetOccupationId])
   @@map("users")
 }
 
@@ -56,6 +59,7 @@ model Occupation {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
   skillRelations OccupationSkillRelation[]
+  targetedByUsers User[] @relation("UserCareerTarget")
 
   @@index([preferredLabel])
   @@index([sourceSystem])

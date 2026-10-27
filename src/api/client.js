@@ -42,7 +42,7 @@ async function refreshCsrfToken() {
   return body.csrfToken
 }
 
-export async function apiRequest(path, { method = 'GET', body, mutate = false } = {}) {
+export async function apiRequest(path, { method = 'GET', body, mutate = false, signal } = {}) {
   const headers = { Accept: 'application/json' }
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json'
@@ -58,6 +58,7 @@ export async function apiRequest(path, { method = 'GET', body, mutate = false } 
       credentials: 'include',
       headers: requestHeaders,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal,
     })
   }
 

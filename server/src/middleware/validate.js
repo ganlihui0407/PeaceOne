@@ -9,3 +9,27 @@ export function validateBody(schema) {
     next();
   };
 }
+
+export function validateQuery(schema) {
+  return (req, res, next) => {
+    const parsed = schema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid request' });
+      return;
+    }
+    req.validatedQuery = parsed.data;
+    next();
+  };
+}
+
+export function validateParams(schema) {
+  return (req, res, next) => {
+    const parsed = schema.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid request' });
+      return;
+    }
+    req.validatedParams = parsed.data;
+    next();
+  };
+}

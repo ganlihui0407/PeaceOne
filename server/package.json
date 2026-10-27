@@ -9,7 +9,7 @@
     "dev": "node --watch src/index.js",
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev",
-    "test": "node --import ./test/setup.js --test test/session-csrf.test.js test/auth.test.js test/authorization.test.js test/security.test.js test/rate-limit.test.js test/esco-csv.test.js test/esco-import.test.js",
+    "test": "node --import ./test/setup.js --test --test-concurrency=1 test/session-csrf.test.js test/auth.test.js test/authorization.test.js test/security.test.js test/rate-limit.test.js test/esco-csv.test.js test/esco-import.test.js test/esco-api.test.js test/user-skills-api.test.js test/skill-gap-api.test.js test/career-target-api.test.js",
     "test:esco": "node --import ./test/setup.js --test test/esco-csv.test.js test/esco-import.test.js",
     "esco:import": "node scripts/import-esco.js",
     "esco:benchmark": "node scripts/benchmark-esco-import.js",

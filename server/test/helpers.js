@@ -33,19 +33,23 @@ export async function primeCsrf(baseUrl) {
   return { csrfToken, cookies: cookieHeader(response) };
 }
 
-export async function postJson(baseUrl, path, { csrfToken, cookies }, body, extraHeaders = {}) {
+export async function requestJson(baseUrl, path, { method = 'GET', csrfToken, cookies = '', body, extraHeaders = {} } = {}) {
   const headers = {
-    Cookie: cookies,
-    'Content-Type': 'application/json',
     ...extraHeaders,
   };
+  if (cookies) {
+    headers.Cookie = cookies;
+  }
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
   if (csrfToken) {
     headers['x-csrf-token'] = csrfToken;
   }
   const response = await fetch(`${baseUrl}${path}`, {
-    method: 'POST',
+    method,
     headers,
-    body: typeof body === 'string' ? body : JSON.stringify(body),
+    body: body !== undefined ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
   });
   const text = await response.text();
   let json = null;
@@ -55,6 +59,16 @@ export async function postJson(baseUrl, path, { csrfToken, cookies }, body, extr
     json = null;
   }
   return { response, json, text, cookies: cookieHeader(response, cookies) };
+}
+
+export async function postJson(baseUrl, path, session, body, extraHeaders = {}) {
+  return requestJson(baseUrl, path, {
+    method: 'POST',
+    csrfToken: session.csrfToken,
+    cookies: session.cookies,
+    body,
+    extraHeaders,
+  });
 }
 
 export function validRegisterBody(email, extras = {}) {

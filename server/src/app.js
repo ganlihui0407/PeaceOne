@@ -5,6 +5,11 @@ import { sessionMiddleware } from './lib/session.js';
 import { doubleCsrfProtection, generateCsrfToken, isCsrfError } from './lib/csrf.js';
 import { apiRateLimit } from './middleware/rateLimit.js';
 import { authRouter } from './routes/auth.js';
+import { occupationsRouter } from './routes/occupations.js';
+import { skillsRouter } from './routes/skills.js';
+import { userSkillsRouter } from './routes/userSkills.js';
+import { skillGapRouter } from './routes/skillGap.js';
+import { careerTargetRouter } from './routes/careerTarget.js';
 
 export function createApp(options = {}) {
   const app = express();
@@ -43,6 +48,11 @@ export function createApp(options = {}) {
 
   app.use(doubleCsrfProtection);
   app.use('/api/auth', authRouter);
+  app.use('/api/occupations', occupationsRouter);
+  app.use('/api/skills', skillsRouter);
+  app.use('/api/me/skills', userSkillsRouter);
+  app.use('/api/me/skill-gap', skillGapRouter);
+  app.use('/api/me/career-target', careerTargetRouter);
 
   if (typeof options.registerTestRoutes === 'function') {
     options.registerTestRoutes(app);

@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "test": "node --test src/auth/sessionStatus.test.js src/api/auth.session.test.js src/api/esco.test.js src/api/userSkills.test.js src/api/skillGap.test.js src/api/careerTarget.test.js src/api/learningRecommendations.test.js",
+    "test:learning": "node --test src/api/learningRecommendations.test.js",
     "test:auth": "node --test src/auth/sessionStatus.test.js src/api/auth.session.test.js",
+    "test:esco": "node --test src/api/esco.test.js",
+    "test:skills": "node --test src/api/userSkills.test.js",
+    "test:skill-gap": "node --test src/api/skillGap.test.js",
+    "test:career-target": "node --test src/api/careerTarget.test.js",
     "preview": "vite preview"
   },
   "dependencies": {
