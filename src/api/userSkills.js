@@ -1,6 +1,7 @@
 import { ACCOUNT_UNAVAILABLE_ERROR, ACCOUNT_UNAVAILABLE_MESSAGE } from '../auth/sessionStatus.js'
 import { ApiError, apiRequest } from './client.js'
 import { isAbortError, parseSkillSummary } from './esco.js'
+import { clearRecordedSkillsCache } from './recordedSkillsCache.js'
 
 export const USER_SKILLS_UNAVAILABLE = 'Saved skills are unavailable right now.'
 export const PROFICIENCY_LEVELS = ['Beginner', 'Intermediate', 'Advanced']
@@ -86,7 +87,9 @@ export async function createSavedSkill({ skillId, proficiencyLevel, signal } = {
     },
     USER_SKILLS_UNAVAILABLE,
   )
-  return parseUserSkill(payload?.userSkill)
+  const saved = parseUserSkill(payload?.userSkill)
+  clearRecordedSkillsCache()
+  return saved
 }
 
 export async function updateSavedSkill(id, { proficiencyLevel, signal } = {}) {
@@ -100,7 +103,9 @@ export async function updateSavedSkill(id, { proficiencyLevel, signal } = {}) {
     },
     USER_SKILLS_UNAVAILABLE,
   )
-  return parseUserSkill(payload?.userSkill)
+  const saved = parseUserSkill(payload?.userSkill)
+  clearRecordedSkillsCache()
+  return saved
 }
 
 export async function deleteSavedSkill(id, { signal } = {}) {
@@ -116,5 +121,6 @@ export async function deleteSavedSkill(id, { signal } = {}) {
   if (payload?.ok !== true) {
     throw new ApiError(USER_SKILLS_UNAVAILABLE, 500)
   }
+  clearRecordedSkillsCache()
   return true
 }

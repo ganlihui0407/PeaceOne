@@ -1,63 +1,57 @@
-import Button from '../../components/common/Button.jsx'
-import Badge from '../../components/common/Badge.jsx'
-import Table from '../../components/common/Table.jsx'
+import Avatar from '../../components/common/Avatar.jsx'
+import QueryStatus from '../../components/common/QueryStatus.jsx'
 import Card from '../../components/cards/Card.jsx'
-import StatCard from '../../components/cards/StatCard.jsx'
 import PageContent from '../../components/layout/PageContent.jsx'
-import SectionHeader from '../../components/ui/SectionHeader.jsx'
-import { adminDashboard } from '../../data/adminDashboardData.js'
+import { greetingForHour } from '../../api/candidateDashboard.js'
+import { useAdminDashboard } from '../../hooks/useStaffAdminDashboard.js'
+import {
+  AdminActivityUnavailableSection,
+  AdminApplicationStatsSection,
+  AdminInterviewStatsSection,
+  AdminShortcutsSection,
+  AdminUnavailableOverview,
+} from '../shared/StaffAdminDashboardPanels.jsx'
 
 function AdminDashboard() {
-  const { heading, support, stats, reviewStats, activity, shortcuts } = adminDashboard
+  const { data, loading, error, retry } = useAdminDashboard()
 
   return (
-    <PageContent title={heading} description={support}>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((item) => (
-          <StatCard key={item.label} label={item.label} value={item.value} />
-        ))}
-      </div>
-
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {reviewStats.map((item) => (
-          <Card key={item.label} padding="sm">
-            <p className="po-secondary">{item.label}</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight text-ink">{item.value}</p>
-          </Card>
-        ))}
-      </div>
-
-      <section className="po-section-block">
-        <SectionHeader title="Quick management" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {shortcuts.map((item) => (
-            <Card key={item.label}>
-              <h3 className="po-card-title">{item.label}</h3>
-              <div className="mt-4">
-                <Button to={item.to} variant="secondary" className="w-full">
-                  {item.label}
-                </Button>
+    <PageContent width="wide">
+      <QueryStatus
+        loading={loading}
+        error={error}
+        loadingLabel="Loading your dashboard…"
+        onRetry={retry}
+      >
+        {data ? (
+          <>
+            <Card className="mb-8">
+              <div className="flex items-start gap-4">
+                <Avatar name={data.fullName} size="lg" />
+                <div>
+                  <h1 className="po-page-title">
+                    {greetingForHour()}, {data.firstName}
+                  </h1>
+                  <p className="po-secondary mt-1">
+                    Your signed-in administrator profile is shown here. Job moderation is on Job Monitoring.
+                    Application and interview totals below are live aggregates. User, learning and activity
+                    totals appear only when a live API stores them.
+                  </p>
+                  <p className="po-secondary mt-2">
+                    {data.roleLabel} · {data.accountStatusLabel} · {data.email}
+                  </p>
+                </div>
               </div>
             </Card>
-          ))}
-        </div>
-      </section>
 
-      <section className="po-section-block">
-        <SectionHeader title="Recent activity" />
-        <Table
-          minWidthClass="min-w-[720px]"
-          headers={['Activity', 'User / Company', 'Date / Time', 'Type / Status']}
-          rows={activity.map((item) => [
-            item.activity,
-            item.actor,
-            item.time,
-            <Badge key={item.id} status={item.type.toLowerCase()} className="normal-case">
-              {item.type}
-            </Badge>,
-          ])}
-        />
-      </section>
+            <AdminApplicationStatsSection stats={data.applicationStats} />
+            <AdminInterviewStatsSection stats={data.interviewStats} />
+            <AdminUnavailableOverview />
+            <AdminShortcutsSection />
+            <AdminActivityUnavailableSection />
+          </>
+        ) : null}
+      </QueryStatus>
     </PageContent>
   )
 }

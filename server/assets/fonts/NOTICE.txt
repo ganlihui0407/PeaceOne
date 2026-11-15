@@ -1,0 +1,19 @@
+PeaceOne bundled resume PDF fonts (SIL Open Font License 1.1; see OFL.txt).
+
+Noto Sans Regular/Bold (TTF)
+- Source: https://github.com/notofonts/latin-greek-cyrillic
+- Coverage: Latin, extended Latin, Greek, Cyrillic
+
+Noto Sans SC Regular/Bold (Subset OTF)
+Noto Sans JP Regular (Subset OTF)
+Noto Sans KR Regular (Subset OTF)
+- Source: https://github.com/notofonts/noto-cjk
+- Coverage: Simplified Chinese, Japanese kana/kanji subset, Korean hangul subset
+
+These files stay in this directory and are registered at PDF generation time.
+The server does not download fonts at runtime.
+
+Remaining unsupported scripts include Arabic, Hebrew, Thai, Devanagari, Tamil
+and other unbundled complex scripts. Traditional Chinese region-specific glyphs
+may render with Simplified Chinese forms. Shared Han ideographs prefer the
+Simplified Chinese subset when that font is loaded.

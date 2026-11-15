@@ -1,26 +1,101 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Badge from '../../components/common/Badge.jsx'
 import Button from '../../components/common/Button.jsx'
+import QueryStatus from '../../components/common/QueryStatus.jsx'
 import Table from '../../components/common/Table.jsx'
-import Toast from '../../components/common/Toast.jsx'
 import Card from '../../components/cards/Card.jsx'
 import PageContent from '../../components/layout/PageContent.jsx'
-import { getCandidateJob } from '../../data/candidateJobs.js'
+import DetailItem from '../../components/ui/DetailItem.jsx'
+import JobSkillMatchPanel from '../../components/jobs/JobSkillMatchPanel.jsx'
+import {
+  candidateJobsPath,
+  fetchPublishedJob,
+  formatEmploymentType,
+  formatJobDate,
+  formatSalaryRange,
+  isAbortError,
+  isJobId,
+  userFacingPublishedJobError,
+} from '../../api/jobs.js'
+import {
+  candidateApplicationPath,
+  candidateApplyPath,
+  fetchMyApplicationForJob,
+  formatApplicationStatus,
+} from '../../api/applications.js'
+import { useRecordedSkills } from '../../hooks/useRecordedSkills.js'
 
-function CandidateJobDetailPage({ basePath, variant = 'student' }) {
+function CandidateJobDetailPage({ basePath }) {
   const { jobId } = useParams()
-  const job = getCandidateJob(jobId)
-  const [toast, setToast] = useState('')
-  const isJobSeeker = variant === 'jobseeker'
+  return <CandidateJobDetailView key={jobId} basePath={basePath} jobId={jobId} />
+}
 
-  if (!job) {
+function CandidateJobDetailView({ basePath, jobId }) {
+  const validId = isJobId(jobId)
+  const jobsPath = candidateJobsPath(basePath)
+  const [job, setJob] = useState(null)
+  const [loading, setLoading] = useState(validId)
+  const [error, setError] = useState('')
+  const [notFound, setNotFound] = useState(!validId)
+  const [retryNonce, setRetryNonce] = useState(0)
+  const [existingApplication, setExistingApplication] = useState(null)
+  const recordedSkills = useRecordedSkills({ enabled: validId })
+
+  useEffect(() => {
+    if (!validId) {
+      return undefined
+    }
+    const controller = new AbortController()
+    setLoading(true)
+    setError('')
+    setNotFound(false)
+    setExistingApplication(null)
+    Promise.all([
+      fetchPublishedJob(jobId, { signal: controller.signal }),
+      fetchMyApplicationForJob(jobId, { signal: controller.signal }).catch((applicationError) => {
+        if (applicationError.status === 404) {
+          return null
+        }
+        throw applicationError
+      }),
+    ])
+      .then(([next, application]) => {
+        if (!controller.signal.aborted) {
+          setJob(next)
+          setExistingApplication(application)
+        }
+      })
+      .catch((loadError) => {
+        if (isAbortError(loadError) || controller.signal.aborted) {
+          return
+        }
+        setJob(null)
+        setExistingApplication(null)
+        if (loadError.status === 404) {
+          setNotFound(true)
+          return
+        }
+        setError(userFacingPublishedJobError(loadError))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+      })
+    return () => controller.abort()
+  }, [jobId, retryNonce, validId])
+
+  if (notFound) {
     return (
-      <PageContent title="Job Details">
+      <PageContent title="Job unavailable">
         <Card>
-          <p className="po-body">This job posting could not be found.</p>
+          <p className="po-body">This job is not available.</p>
+          <p className="po-secondary mt-2">
+            Draft, closed, suspended and expired vacancies are not listed for students and job seekers.
+          </p>
           <div className="mt-5">
-            <Button to={`${basePath}/jobs`}>Back to Jobs</Button>
+            <Button to={jobsPath}>Back to Jobs</Button>
           </div>
         </Card>
       </PageContent>
@@ -28,148 +103,137 @@ function CandidateJobDetailPage({ basePath, variant = 'student' }) {
   }
 
   return (
-    <PageContent>
-      <Link to={`${basePath}/jobs`} className="text-sm font-medium text-primary">
-        Back to Jobs
-      </Link>
-      <div className="mt-5 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <Card>
-          <div className="flex flex-wrap gap-2">
-            <Badge tone="primary">{job.employmentType}</Badge>
-            <Badge status="active" className="normal-case">
-              {job.jobStatus}
-            </Badge>
-            {isJobSeeker && typeof job.match === 'number' ? (
-              <Badge tone={job.match >= 80 ? 'success' : 'primary'}>{job.match}% Match</Badge>
-            ) : job.careerFit ? (
-              <Badge tone="primary" className="normal-case">
-                Career Fit: {job.careerFit.replace(' Fit', '')}
-              </Badge>
-            ) : null}
-          </div>
-          <h1 className="po-page-title mt-4">{job.jobTitle}</h1>
-          <p className="po-secondary mt-2">
-            {job.company} · {job.location}
-          </p>
-          <dl className="po-secondary mt-6 grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="po-helper">Employment Type</dt>
-              <dd className="font-medium text-ink">{job.employmentType}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Location</dt>
-              <dd className="font-medium text-ink">{job.location}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Salary</dt>
-              <dd className="font-medium text-ink">{job.salary}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Experience Required</dt>
-              <dd className="font-medium text-ink">{job.experienceRequired}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Qualification Required</dt>
-              <dd className="font-medium text-ink">{job.qualificationRequired}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Posted Date</dt>
-              <dd className="font-medium text-ink">{job.postedDate}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Closing Date</dt>
-              <dd className="font-medium text-ink">{job.closingDate}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Job Status</dt>
-              <dd className="font-medium text-ink">{job.jobStatus}</dd>
-            </div>
-          </dl>
-          <h2 className="po-section-title mt-8">Job Description</h2>
-          <p className="po-secondary mt-2">{job.jobDescription}</p>
-          <h2 className="po-section-title mt-8">Required Skills</h2>
-          <div className="mt-4">
-            <Table
-              minWidthClass="min-w-[520px]"
-              headers={['Skill Name', 'Required Level', 'Importance']}
-              rows={job.requiredSkills.map((item) => [
-                item.skillName,
-                item.requiredLevel,
-                <Badge
-                  key={item.skillName}
-                  tone={item.importance === 'High' ? 'primary' : 'default'}
-                  className="normal-case"
-                >
-                  {item.importance}
-                </Badge>,
-              ])}
-            />
-          </div>
-          <div className="mt-8 flex flex-wrap gap-2">
-            <Button to={`${basePath}/jobs/${job.id}/apply`}>Apply Now</Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setToast('Job saved.')
-                window.setTimeout(() => setToast(''), 2500)
-              }}
-            >
-              Save Job
-            </Button>
-          </div>
-        </Card>
+    <PageContent
+      title={job?.title || 'Job details'}
+      description="Review the published vacancy details returned by PeaceOne."
+      actions={
+        <Button variant="secondary" to={jobsPath}>
+          Back to Jobs
+        </Button>
+      }
+    >
+      <QueryStatus
+        loading={loading}
+        error={error}
+        loadingLabel="Loading job details…"
+        onRetry={() => setRetryNonce((current) => current + 1)}
+      >
+        {job ? (
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)]">
+            <div className="space-y-6">
+              <Card>
+                <div className="flex flex-wrap gap-2">
+                  <Badge tone="primary">{formatEmploymentType(job.employmentType)}</Badge>
+                </div>
+                <h1 className="po-page-title mt-4">{job.title}</h1>
+                <p className="po-secondary mt-2">
+                  {job.company.companyName}
+                  {job.company.industry ? ` · ${job.company.industry}` : ''}
+                </p>
+                <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <DetailItem label="Location" value={job.location} />
+                  <DetailItem label="Employment type" value={formatEmploymentType(job.employmentType)} />
+                  <DetailItem label="Salary range" value={formatSalaryRange(job)} />
+                  <DetailItem label="Published" value={formatJobDate(job.publishedAt)} />
+                  <DetailItem label="Closing date" value={formatJobDate(job.closesAt)} />
+                </dl>
+              </Card>
 
-        <div className="space-y-6">
-          <Card>
-            <h2 className="po-section-title">Company</h2>
-            <p className="mt-3 text-lg font-semibold text-ink">{job.companyInfo.name}</p>
-            <dl className="po-secondary mt-4 space-y-3">
-              <div>
-                <dt className="po-helper">Industry</dt>
-                <dd className="font-medium text-ink">{job.companyInfo.industry}</dd>
-              </div>
-              <div>
-                <dt className="po-helper">Location</dt>
-                <dd className="font-medium text-ink">{job.companyInfo.location}</dd>
-              </div>
-              <div>
-                <dt className="po-helper">Website</dt>
-                <dd className="font-medium text-ink">{job.companyInfo.website}</dd>
-              </div>
-            </dl>
-            <p className="po-secondary mt-4">{job.companyInfo.description}</p>
-          </Card>
+              <Card>
+                <h2 className="po-section-title">Job Description</h2>
+                <p className="po-body mt-4 whitespace-pre-wrap">{job.description}</p>
+              </Card>
 
-          {isJobSeeker && job.matchBreakdown ? (
-            <Card>
-              <h2 className="po-section-title">Compatibility Score: {job.match}%</h2>
-              <p className="po-secondary mt-2">How this role compares with your current profile.</p>
-              <dl className="mt-4 space-y-3">
-                <div className="flex justify-between gap-3">
-                  <dt className="po-secondary">Skill Match</dt>
-                  <dd className="font-medium text-ink">{job.matchBreakdown.skillMatch}</dd>
+              <Card>
+                <h2 className="po-section-title">Qualifications</h2>
+                <p className="po-body mt-4 whitespace-pre-wrap">{job.qualificationRequired}</p>
+              </Card>
+
+              <Card>
+                <h2 className="po-section-title">Experience required</h2>
+                <p className="po-body mt-4 whitespace-pre-wrap">{job.experienceRequired}</p>
+              </Card>
+
+              <Card>
+                <h2 className="po-section-title">Required ESCO skills</h2>
+                <div className="mt-5">
+                  {job.requiredSkills.length === 0 ? (
+                    <p className="po-helper mt-0">No ESCO skills have been recorded for this vacancy.</p>
+                  ) : (
+                    <Table
+                      minWidthClass="min-w-[520px]"
+                      headers={['Skill', 'Required proficiency']}
+                      rows={job.requiredSkills.map((skill) => [
+                        skill.skill.preferredLabel,
+                        skill.requiredLevel,
+                      ])}
+                    />
+                  )}
                 </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="po-secondary">Qualification</dt>
-                  <dd className="font-medium text-ink">{job.matchBreakdown.qualification}</dd>
+              </Card>
+
+              <JobSkillMatchPanel
+                job={job}
+                skills={recordedSkills.items}
+                skillsLoading={recordedSkills.loading}
+                skillsError={recordedSkills.error}
+                onRetrySkills={recordedSkills.retry}
+                basePath={basePath}
+              />
+            </div>
+
+            <div className="space-y-6">
+              <Card>
+                <h2 className="po-section-title">Company</h2>
+                <p className="mt-3 text-lg font-semibold text-ink">{job.company.companyName}</p>
+                <dl className="mt-4 grid gap-4">
+                  <DetailItem label="Industry" value={job.company.industry || '—'} />
+                  <DetailItem label="Location" value={job.company.location || '—'} />
+                  <DetailItem label="Website" value={job.company.website || '—'} />
+                </dl>
+                {job.company.description ? (
+                  <p className="po-body mt-4 whitespace-pre-wrap">{job.company.description}</p>
+                ) : (
+                  <p className="po-helper mt-4">No company description has been published.</p>
+                )}
+              </Card>
+
+              <Card>
+                <h2 className="po-section-title">Applications</h2>
+                {existingApplication ? (
+                  <>
+                    <p className="po-secondary mt-2">
+                      Already Applied · {formatApplicationStatus(existingApplication.status)}
+                    </p>
+                    <p className="po-helper mt-2">
+                      Withdrawal does not allow a second application for this job.
+                    </p>
+                    <div className="mt-5">
+                      <Button to={candidateApplicationPath(basePath, existingApplication.id)}>
+                        View application
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="po-secondary mt-2">
+                      Submit a saved resume. PeaceOne stores an independent copy with the application.
+                    </p>
+                    <div className="mt-5">
+                      <Button to={candidateApplyPath(basePath, job.id)}>Apply Now</Button>
+                    </div>
+                  </>
+                )}
+                <div className="mt-4">
+                  <Link to={jobsPath} className="text-sm font-medium text-primary">
+                    Back to job search
+                  </Link>
                 </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="po-secondary">Experience</dt>
-                  <dd className="font-medium text-ink">{job.matchBreakdown.experience}</dd>
-                </div>
-              </dl>
-            </Card>
-          ) : (
-            <Card>
-              <h2 className="po-section-title">Career Fit: {job.careerFit || 'Good'}</h2>
-              <p className="po-secondary mt-2">
-                This label reflects how closely the role aligns with your selected career target.
-              </p>
-            </Card>
-          )}
-        </div>
-      </div>
-      <Toast message={toast} />
+              </Card>
+            </div>
+          </div>
+        ) : null}
+      </QueryStatus>
     </PageContent>
   )
 }

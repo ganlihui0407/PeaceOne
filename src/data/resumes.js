@@ -12,5 +12,3 @@ export const mockResumes = {
     isPrimary: true,
   },
 }
-
-export const mockExtractedSkills = ['Python', 'SQL', 'Excel', 'Communication', 'Data Analysis']

@@ -58,9 +58,27 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  const applySessionUser = useCallback((profile) => {
+    if (!profile || typeof profile.fullName !== 'string') {
+      return
+    }
+    setUser((current) => {
+      if (!current) {
+        return current
+      }
+      return {
+        id: current.id,
+        email: current.email,
+        fullName: profile.fullName,
+        role: current.role,
+        accountStatus: current.accountStatus,
+      }
+    })
+  }, [])
+
   const value = useMemo(
-    () => ({ user, ready, sessionNotice, register, login, logout }),
-    [user, ready, sessionNotice, register, login, logout],
+    () => ({ user, ready, sessionNotice, register, login, logout, applySessionUser }),
+    [user, ready, sessionNotice, register, login, logout, applySessionUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

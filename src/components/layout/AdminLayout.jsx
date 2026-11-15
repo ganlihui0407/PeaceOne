@@ -9,10 +9,16 @@ function getPageTitle(pathname) {
   if (pathname.includes('/learning/') && pathname.endsWith('/edit')) return 'Edit Learning Content'
   if (/\/users\/[^/]+$/.test(pathname)) return 'User Details'
   if (/\/jobs\/[^/]+$/.test(pathname)) return 'Job Moderation'
+  if (pathname.endsWith('/position-requests')) return 'Position Change Requests'
+  if (pathname.includes('/position-requests/')) return 'Position Change Request'
+  if (pathname.endsWith('/masco/crosswalks')) return 'MASCO Crosswalks'
+  if (/\/masco\/[^/]+$/.test(pathname)) return 'MASCO Occupation'
 
   const titles = {
     dashboard: 'Dashboard',
     users: 'User Management',
+    masco: 'MASCO Occupations',
+    crosswalks: 'MASCO Crosswalks',
     jobs: 'Job Monitoring',
     learning: 'Learning Content',
     content: 'Content Monitoring',

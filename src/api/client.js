@@ -42,9 +42,9 @@ async function refreshCsrfToken() {
   return body.csrfToken
 }
 
-export async function apiRequest(path, { method = 'GET', body, mutate = false, signal } = {}) {
+export async function apiRequest(path, { method = 'GET', body, mutate = false, signal, formData } = {}) {
   const headers = { Accept: 'application/json' }
-  if (body !== undefined) {
+  if (body !== undefined && !formData) {
     headers['Content-Type'] = 'application/json'
   }
 
@@ -57,7 +57,7 @@ export async function apiRequest(path, { method = 'GET', body, mutate = false, s
       method,
       credentials: 'include',
       headers: requestHeaders,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: formData ?? (body !== undefined ? JSON.stringify(body) : undefined),
       signal,
     })
   }
@@ -88,4 +88,25 @@ export async function apiRequest(path, { method = 'GET', body, mutate = false, s
   }
 
   return payload
+}
+
+export async function apiDownload(path, { signal } = {}) {
+  const response = await fetch(path, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept:
+        'application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/json',
+    },
+    signal,
+  })
+
+  if (!response.ok) {
+    const payload = await readJson(response)
+    const message =
+      typeof payload?.error === 'string' && payload.error.length > 0 ? payload.error : 'Request failed'
+    throw new ApiError(message, response.status)
+  }
+
+  return response
 }

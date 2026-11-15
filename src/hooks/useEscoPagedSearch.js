@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ESCO_LIST_LIMIT, isAbortError, userFacingLoadError } from '../api/esco.js'
 
-export function useEscoPagedSearch(fetcher, { limit = ESCO_LIST_LIMIT, extraParams } = {}) {
-  const [input, setInput] = useState('')
-  const [query, setQuery] = useState('')
+export function useEscoPagedSearch(fetcher, { limit = ESCO_LIST_LIMIT, extraParams, formatError, initialQuery = '' } = {}) {
+  const [input, setInput] = useState(initialQuery)
+  const [query, setQuery] = useState(initialQuery.trim())
   const [page, setPage] = useState(1)
   const [items, setItems] = useState([])
   const [meta, setMeta] = useState({ page: 1, limit, total: 0, totalPages: 0 })
@@ -48,14 +48,18 @@ export function useEscoPagedSearch(fetcher, { limit = ESCO_LIST_LIMIT, extraPara
         }
         setItems([])
         setMeta({ page: nextPage, limit, total: 0, totalPages: 0 })
-        setError(userFacingLoadError(err, 'Unable to load results right now.'))
+        setError(
+          formatError
+            ? formatError(err)
+            : userFacingLoadError(err, 'Unable to load results right now.'),
+        )
       } finally {
         if (requestId === seqRef.current) {
           setLoading(false)
         }
       }
     },
-    [extraKey, fetcher, limit],
+    [extraKey, fetcher, formatError, limit],
   )
 
   useEffect(() => {
@@ -77,6 +81,12 @@ export function useEscoPagedSearch(fetcher, { limit = ESCO_LIST_LIMIT, extraPara
     setPage(nextPage)
   }
 
+  function resetSearch() {
+    setInput('')
+    setQuery('')
+    setPage(1)
+  }
+
   return {
     input,
     setInput,
@@ -87,6 +97,7 @@ export function useEscoPagedSearch(fetcher, { limit = ESCO_LIST_LIMIT, extraPara
     loading,
     error,
     search,
+    resetSearch,
     retry: () => {
       void load(query, page)
     },

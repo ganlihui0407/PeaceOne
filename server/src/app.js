@@ -6,10 +6,28 @@ import { doubleCsrfProtection, generateCsrfToken, isCsrfError } from './lib/csrf
 import { apiRateLimit } from './middleware/rateLimit.js';
 import { authRouter } from './routes/auth.js';
 import { occupationsRouter } from './routes/occupations.js';
+import { mascoOccupationsRouter } from './routes/mascoOccupations.js';
+import { mascoCrosswalksRouter } from './routes/mascoCrosswalks.js';
 import { skillsRouter } from './routes/skills.js';
 import { userSkillsRouter } from './routes/userSkills.js';
 import { skillGapRouter } from './routes/skillGap.js';
 import { careerTargetRouter } from './routes/careerTarget.js';
+import { mePositionChangeRequestsRouter } from './routes/mePositionChangeRequests.js';
+import { adminPositionChangeRequestsRouter } from './routes/adminPositionChangeRequests.js';
+import { meCompanyRouter } from './routes/meCompany.js';
+import { adminCompaniesRouter } from './routes/adminCompanies.js';
+import { meResumesRouter } from './routes/meResumes.js';
+import { meJobsRouter } from './routes/meJobs.js';
+import { adminJobsRouter } from './routes/adminJobs.js';
+import { jobsRouter } from './routes/jobs.js';
+import { meApplicationsRouter } from './routes/meApplications.js';
+import { employerApplicationsRouter } from './routes/employerApplications.js';
+import { adminApplicationsRouter } from './routes/adminApplications.js';
+import { meInterviewsRouter } from './routes/meInterviews.js';
+import { employerInterviewsRouter } from './routes/employerInterviews.js';
+import { adminInterviewsRouter } from './routes/adminInterviews.js';
+import { meNotificationsRouter } from './routes/meNotifications.js';
+import { meRouter } from './routes/me.js';
 
 export function createApp(options = {}) {
   const app = express();
@@ -49,10 +67,28 @@ export function createApp(options = {}) {
   app.use(doubleCsrfProtection);
   app.use('/api/auth', authRouter);
   app.use('/api/occupations', occupationsRouter);
+  app.use('/api/masco/occupations', mascoOccupationsRouter);
+  app.use('/api/masco/crosswalks', mascoCrosswalksRouter);
   app.use('/api/skills', skillsRouter);
   app.use('/api/me/skills', userSkillsRouter);
   app.use('/api/me/skill-gap', skillGapRouter);
   app.use('/api/me/career-target', careerTargetRouter);
+  app.use('/api/me/position-change-requests', mePositionChangeRequestsRouter);
+  app.use('/api/admin/position-change-requests', adminPositionChangeRequestsRouter);
+  app.use('/api/me/company', meCompanyRouter);
+  app.use('/api/admin/companies', adminCompaniesRouter);
+  app.use('/api/me/resumes', meResumesRouter);
+  app.use('/api/me/jobs', meJobsRouter);
+  app.use('/api/admin/jobs', adminJobsRouter);
+  app.use('/api/jobs', jobsRouter);
+  app.use('/api/me/applications', meApplicationsRouter);
+  app.use('/api/employer/applications', employerApplicationsRouter);
+  app.use('/api/admin/applications', adminApplicationsRouter);
+  app.use('/api/me/interviews', meInterviewsRouter);
+  app.use('/api/employer/interviews', employerInterviewsRouter);
+  app.use('/api/admin/interviews', adminInterviewsRouter);
+  app.use('/api/me/notifications', meNotificationsRouter);
+  app.use('/api/me', meRouter);
 
   if (typeof options.registerTestRoutes === 'function') {
     options.registerTestRoutes(app);

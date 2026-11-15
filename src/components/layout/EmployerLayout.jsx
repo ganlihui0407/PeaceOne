@@ -8,7 +8,8 @@ function getPageTitle(pathname) {
   if (pathname.endsWith('/jobs/create')) return 'Create Job Posting'
   if (pathname.includes('/jobs/') && pathname.endsWith('/edit')) return 'Edit Job Posting'
   if (pathname.endsWith('/interviews/create')) return 'Schedule Interview'
-  if (pathname.includes('/interviews/') && pathname.endsWith('/edit')) return 'Edit Interview'
+  if (pathname.includes('/interviews/') && pathname.endsWith('/edit')) return 'Update Interview'
+  if (/\/interviews\/[^/]+$/.test(pathname)) return 'Interview details'
   if (/\/applicants\/[^/]+$/.test(pathname)) return 'Applicant Details'
   if (/\/jobs\/[^/]+$/.test(pathname)) return 'Job Posting'
 

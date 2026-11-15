@@ -1,133 +1,175 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Badge from '../../components/common/Badge.jsx'
 import Button from '../../components/common/Button.jsx'
-import Modal from '../../components/common/Modal.jsx'
+import PaginationBar from '../../components/common/PaginationBar.jsx'
+import QueryStatus from '../../components/common/QueryStatus.jsx'
 import Table from '../../components/common/Table.jsx'
-import Toast from '../../components/common/Toast.jsx'
+import Card from '../../components/cards/Card.jsx'
 import StatCard from '../../components/cards/StatCard.jsx'
 import PageContent from '../../components/layout/PageContent.jsx'
-import { employerInterviews, employerInterviewSummary } from '../../data/employerInterviews.js'
+import SelectInput from '../../components/forms/SelectInput.jsx'
+import {
+  EMPLOYER_INTERVIEWS_EMPTY,
+  INTERVIEW_LIST_LIMIT,
+  INTERVIEW_STATUS_OPTIONS,
+  employerInterviewCreatePath,
+  employerInterviewPath,
+  fetchEmployerInterviewStats,
+  fetchEmployerInterviews,
+  formatInterviewStatus,
+  formatInterviewType,
+  formatInterviewWhen,
+  interviewStatusTone,
+  isAbortError,
+  userFacingInterviewError,
+} from '../../api/interviews.js'
+
+const TAB_FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'CONFIRMED', label: 'Upcoming' },
+  { value: 'PROPOSED', label: 'Pending responses' },
+  { value: 'RESCHEDULE_REQUESTED', label: 'Reschedule requests' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+]
 
 function EmployerInterviews() {
-  const [selected, setSelected] = useState(null)
-  const [cancelledIds, setCancelledIds] = useState([])
-  const [toast, setToast] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialStatus = (searchParams.get('status') || '').trim()
+  const [statusInput, setStatusInput] = useState(initialStatus)
+  const [page, setPage] = useState(1)
+  const [stats, setStats] = useState(null)
+  const [result, setResult] = useState({ items: [], page: 1, totalPages: 1, total: 0 })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [retryNonce, setRetryNonce] = useState(0)
 
-  const rows = employerInterviews.map((item) =>
-    cancelledIds.includes(item.id) ? { ...item, interviewStatus: 'Cancelled' } : item,
-  )
+  useEffect(() => {
+    const controller = new AbortController()
+    setLoading(true)
+    setError('')
+    Promise.all([
+      fetchEmployerInterviewStats({ signal: controller.signal }),
+      fetchEmployerInterviews({
+        status: statusInput,
+        page,
+        limit: INTERVIEW_LIST_LIMIT,
+        signal: controller.signal,
+      }),
+    ])
+      .then(([nextStats, nextResult]) => {
+        if (controller.signal.aborted) {
+          return
+        }
+        setStats(nextStats)
+        setResult(nextResult)
+      })
+      .catch((loadError) => {
+        if (isAbortError(loadError) || controller.signal.aborted) {
+          return
+        }
+        setError(userFacingInterviewError(loadError))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+      })
+    return () => controller.abort()
+  }, [statusInput, page, retryNonce])
 
-  function cancelInterview(item) {
-    setCancelledIds((current) => (current.includes(item.id) ? current : [...current, item.id]))
-    setSelected(null)
-    setToast('Interview cancelled.')
-    window.setTimeout(() => setToast(''), 2500)
+  function applyStatus(nextStatus) {
+    setStatusInput(nextStatus)
+    setPage(1)
+    const next = new URLSearchParams(searchParams)
+    if (nextStatus) {
+      next.set('status', nextStatus)
+    } else {
+      next.delete('status')
+    }
+    setSearchParams(next, { replace: true })
   }
+
+  const byStatus = stats?.byStatus || {}
 
   return (
     <PageContent
       title="Interview Management"
-      description="Manage interview arrangements for shortlisted candidates."
-      actions={<Button to="/employer/interviews/create">Schedule Interview</Button>}
+      description="Schedule and track interview invitations using stored company records."
+      actions={<Button to={employerInterviewCreatePath()}>Schedule Interview</Button>}
     >
-      <div className="grid gap-4 sm:grid-cols-3">
-        {employerInterviewSummary.map((item) => (
-          <StatCard key={item.label} label={item.label} value={item.value} />
-        ))}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Total interviews" value={String(stats?.total ?? 0)} />
+        <StatCard label="Pending responses" value={String(byStatus.PROPOSED ?? 0)} />
+        <StatCard label="Reschedule requests" value={String(byStatus.RESCHEDULE_REQUESTED ?? 0)} />
+        <StatCard label="Upcoming confirmed" value={String(stats?.upcomingConfirmed ?? 0)} />
       </div>
 
-      <div className="mt-8">
-        <Table
-          minWidthClass="min-w-[980px]"
-          headers={['Candidate', 'Job', 'Date & Time', 'Method', 'Location / Link', 'Status', 'Actions']}
-          rows={rows.map((item) => [
-            item.candidate,
-            item.jobTitle,
-            `${item.interviewDateLabel}, ${item.interviewTimeLabel}`,
-            item.method,
-            item.locationOrLink,
-            <Badge
-              key={`${item.id}-status`}
-              status={item.interviewStatus.toLowerCase()}
-              className="normal-case"
-            >
-              {item.interviewStatus}
-            </Badge>,
-            <div key={`${item.id}-actions`} className="flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" onClick={() => setSelected(item)}>
+      <Card className="mt-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {TAB_FILTERS.map((tab) => (
+              <Button
+                key={tab.label}
+                size="sm"
+                variant={statusInput === tab.value ? 'primary' : 'secondary'}
+                onClick={() => applyStatus(tab.value)}
+              >
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+          <div className="w-full max-w-xs">
+            <SelectInput
+              id="interview-status-filter"
+              label="Status"
+              value={statusInput}
+              onChange={(event) => applyStatus(event.target.value)}
+              options={INTERVIEW_STATUS_OPTIONS}
+            />
+          </div>
+        </div>
+      </Card>
+
+      <div className="mt-6">
+        <QueryStatus
+          loading={loading}
+          error={error}
+          loadingLabel="Loading interviews…"
+          onRetry={() => setRetryNonce((current) => current + 1)}
+        >
+          <Table
+            minWidthClass="min-w-[980px]"
+            headers={['Candidate', 'Job', 'When', 'Type', 'Round', 'Status', 'Actions']}
+            rows={result.items.map((item) => [
+              item.candidate?.fullName || '—',
+              item.job?.title || '—',
+              formatInterviewWhen(item),
+              formatInterviewType(item.interviewType),
+              String(item.roundNumber),
+              <Badge key={`${item.id}-status`} tone={interviewStatusTone(item.status)} className="normal-case">
+                {formatInterviewStatus(item.status)}
+              </Badge>,
+              <Button key={`${item.id}-view`} size="sm" variant="secondary" to={employerInterviewPath(item.id)}>
                 View
-              </Button>
-              <Button size="sm" variant="secondary" to={`/employer/interviews/${item.id}/edit`}>
-                Edit
-              </Button>
-              {item.interviewStatus !== 'Cancelled' ? (
-                <Button size="sm" variant="ghost" onClick={() => cancelInterview(item)}>
-                  Cancel
-                </Button>
-              ) : null}
-            </div>,
-          ])}
-        />
+              </Button>,
+            ])}
+            emptyTitle={EMPLOYER_INTERVIEWS_EMPTY.title}
+          />
+          <div className="mt-4">
+            <PaginationBar
+              page={result.page}
+              totalPages={result.totalPages}
+              total={result.total}
+              noun="interviews"
+              disabled={loading}
+              onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+              onNext={() => setPage((current) => current + 1)}
+            />
+          </div>
+        </QueryStatus>
       </div>
-
-      <Modal
-        open={Boolean(selected)}
-        title={selected ? `${selected.candidate} · ${selected.jobTitle}` : 'Interview'}
-        size="lg"
-        onClose={() => setSelected(null)}
-        footer={
-          <>
-            {selected && selected.interviewStatus !== 'Cancelled' ? (
-              <Button variant="danger" onClick={() => cancelInterview(selected)}>
-                Cancel Interview
-              </Button>
-            ) : null}
-            <Button variant="secondary" onClick={() => setSelected(null)}>
-              Close
-            </Button>
-          </>
-        }
-      >
-        {selected ? (
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="po-helper">Candidate</dt>
-              <dd className="font-medium text-ink">{selected.candidate}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Job</dt>
-              <dd className="font-medium text-ink">{selected.jobTitle}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Date & Time</dt>
-              <dd className="font-medium text-ink">
-                {selected.interviewDateLabel}, {selected.interviewTimeLabel}
-              </dd>
-            </div>
-            <div>
-              <dt className="po-helper">Method</dt>
-              <dd className="font-medium text-ink">{selected.method}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Location / Link</dt>
-              <dd className="font-medium text-ink">{selected.locationOrLink}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Status</dt>
-              <dd>
-                <Badge status={selected.interviewStatus.toLowerCase()} className="normal-case">
-                  {selected.interviewStatus}
-                </Badge>
-              </dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="po-helper">Notes</dt>
-              <dd className="po-body mt-1">{selected.notes || '—'}</dd>
-            </div>
-          </dl>
-        ) : null}
-      </Modal>
-      <Toast message={toast} />
     </PageContent>
   )
 }

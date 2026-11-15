@@ -1,6 +1,6 @@
-import { Bell, Menu, Search } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Menu, Search } from 'lucide-react'
 import Avatar from '../common/Avatar.jsx'
+import NotificationBell from '../notifications/NotificationBell.jsx'
 
 function TopHeader({
   title = 'Dashboard',
@@ -41,23 +41,7 @@ function TopHeader({
         </div>
       ) : null}
 
-      {notificationTo ? (
-        <Link
-          to={notificationTo}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-page hover:text-ink focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none"
-          aria-label="Notifications"
-        >
-          <Bell size={18} />
-        </Link>
-      ) : (
-        <button
-          type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-page hover:text-ink focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none"
-          aria-label="Notifications"
-        >
-          <Bell size={18} />
-        </button>
-      )}
+      <NotificationBell centreTo={notificationTo} />
 
       <div className="flex items-center gap-2">
         <Avatar name={userName} size="sm" />

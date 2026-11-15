@@ -29,6 +29,8 @@ build
 # Uploads and private user files
 uploads/
 storage/uploads/
+storage/resumes/
+server/storage/
 
 # Coverage, caches and temporary files
 coverage/

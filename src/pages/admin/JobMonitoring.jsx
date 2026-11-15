@@ -1,150 +1,144 @@
 import { useMemo, useState } from 'react'
 import Badge from '../../components/common/Badge.jsx'
 import Button from '../../components/common/Button.jsx'
-import Modal from '../../components/common/Modal.jsx'
+import PaginationBar from '../../components/common/PaginationBar.jsx'
+import QueryStatus from '../../components/common/QueryStatus.jsx'
 import Table from '../../components/common/Table.jsx'
-import Toast from '../../components/common/Toast.jsx'
-import StatCard from '../../components/cards/StatCard.jsx'
+import Card from '../../components/cards/Card.jsx'
 import PageContent from '../../components/layout/PageContent.jsx'
 import SearchInput from '../../components/forms/SearchInput.jsx'
 import SelectInput from '../../components/forms/SelectInput.jsx'
-import { adminJobCompanies, adminJobs, adminJobSummary, jobReviewStatuses } from '../../data/adminJobs.js'
-import { jobStatuses } from '../../data/employerJobs.js'
+import {
+  JOB_LIST_LIMIT,
+  JOB_STATUS_OPTIONS,
+  adminJobPath,
+  fetchAdminJobs,
+  formatEmploymentType,
+  formatJobDate,
+  formatJobStatus,
+  jobStatusTone,
+  userFacingJobError,
+} from '../../api/jobs.js'
+import { useEscoPagedSearch } from '../../hooks/useEscoPagedSearch.js'
 
 function JobMonitoring() {
-  const [query, setQuery] = useState('')
-  const [company, setCompany] = useState('All')
-  const [jobStatus, setJobStatus] = useState('All')
-  const [reviewStatus, setReviewStatus] = useState('All')
-  const [reviewById, setReviewById] = useState({})
-  const [hiddenIds, setHiddenIds] = useState([])
-  const [removeTarget, setRemoveTarget] = useState(null)
-  const [toast, setToast] = useState('')
+  const [statusInput, setStatusInput] = useState('')
+  const [appliedStatus, setAppliedStatus] = useState('')
+  const extraParams = useMemo(
+    () => (appliedStatus ? { status: appliedStatus } : {}),
+    [appliedStatus],
+  )
+  const list = useEscoPagedSearch(fetchAdminJobs, {
+    limit: JOB_LIST_LIMIT,
+    extraParams,
+    formatError: userFacingJobError,
+  })
+  const hasFilters = list.input !== '' || list.query !== '' || statusInput !== '' || appliedStatus !== ''
 
-  function showToast(message) {
-    setToast(message)
-    window.setTimeout(() => setToast(''), 2500)
+  function applyFilters(event) {
+    event.preventDefault()
+    setAppliedStatus(statusInput)
+    list.search(event)
   }
 
-  const rows = useMemo(() => {
-    return adminJobs
-      .filter((job) => !hiddenIds.includes(job.id))
-      .map((job) => ({
-        ...job,
-        reviewStatus: reviewById[job.id] || job.reviewStatus,
-      }))
-      .filter((job) => {
-        const matchesCompany = company === 'All' || job.companyName === company
-        const matchesStatus = jobStatus === 'All' || job.jobStatus === jobStatus
-        const matchesReview = reviewStatus === 'All' || job.reviewStatus === reviewStatus
-        const haystack = `${job.jobTitle} ${job.companyName}`.toLowerCase()
-        return matchesCompany && matchesStatus && matchesReview && haystack.includes(query.trim().toLowerCase())
-      })
-  }, [query, company, jobStatus, reviewStatus, reviewById, hiddenIds])
-
-  function setReview(jobId, nextStatus, message) {
-    setReviewById((current) => ({ ...current, [jobId]: nextStatus }))
-    showToast(message)
-  }
-
-  function confirmRemove() {
-    if (!removeTarget) return
-    setHiddenIds((current) => (current.includes(removeTarget.id) ? current : [...current, removeTarget.id]))
-    setRemoveTarget(null)
-    showToast('Job posting removed from the current list.')
+  function clearFilters() {
+    setStatusInput('')
+    setAppliedStatus('')
+    list.resetSearch()
   }
 
   return (
     <PageContent
       title="Job Monitoring"
-      description="Review job postings and maintain platform content quality."
+      description="Review stored job postings. Suspend or close listings that do not meet platform policy."
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {adminJobSummary.map((item) => (
-          <StatCard key={item.label} label={item.label} value={item.value} />
-        ))}
-      </div>
+      <Card>
+        <form className="grid gap-4 lg:grid-cols-12" onSubmit={applyFilters}>
+          <div className="lg:col-span-6">
+            <SearchInput
+              id="admin-job-search"
+              label="Search jobs"
+              value={list.input}
+              placeholder="Search by title or company"
+              onChange={(event) => list.setInput(event.target.value)}
+            />
+          </div>
+          <div className="lg:col-span-4">
+            <SelectInput
+              id="admin-job-status"
+              label="Status"
+              value={statusInput}
+              options={JOB_STATUS_OPTIONS}
+              onChange={(event) => setStatusInput(event.target.value)}
+            />
+          </div>
+          <div className="flex flex-col justify-end gap-2 sm:flex-row lg:col-span-2">
+            <Button type="submit" className="w-full" disabled={list.loading}>
+              Search
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              disabled={list.loading || !hasFilters}
+              onClick={clearFilters}
+            >
+              Clear
+            </Button>
+          </div>
+        </form>
+      </Card>
 
-      <div className="mt-8 mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SearchInput
-          id="admin-job-search"
-          label="Search Job"
-          value={query}
-          placeholder="Search by title or company"
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <SelectInput
-          id="admin-job-company"
-          label="Company"
-          value={company}
-          onChange={(event) => setCompany(event.target.value)}
-          options={adminJobCompanies}
-        />
-        <SelectInput
-          id="admin-job-status"
-          label="Job Status"
-          value={jobStatus}
-          onChange={(event) => setJobStatus(event.target.value)}
-          options={['All', ...jobStatuses]}
-        />
-        <SelectInput
-          id="admin-job-review"
-          label="Review Status"
-          value={reviewStatus}
-          onChange={(event) => setReviewStatus(event.target.value)}
-          options={jobReviewStatuses}
-        />
-      </div>
-
-      <Table
-        minWidthClass="min-w-[980px]"
-        headers={['Job Title', 'Company', 'Posted Date', 'Job Status', 'Review Status', 'Applicants', 'Actions']}
-        rows={rows.map((job) => [
-          job.jobTitle,
-          job.companyName,
-          job.postedDateLabel,
-          <Badge key={`${job.id}-job`} status={job.jobStatus.toLowerCase()} className="normal-case">
-            {job.jobStatus}
-          </Badge>,
-          <Badge key={`${job.id}-review`} status={job.reviewStatus.toLowerCase()} className="normal-case">
-            {job.reviewStatus}
-          </Badge>,
-          String(job.applicants),
-          <div key={`${job.id}-actions`} className="flex flex-wrap gap-2">
-            <Button size="sm" variant="secondary" to={`/admin/jobs/${job.id}`}>
-              View
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setReview(job.id, 'Approved', 'Job posting approved.')}>
-              Approve
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setReview(job.id, 'Flagged', 'Job posting flagged.')}>
-              Flag
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setRemoveTarget(job)}>
-              Remove
-            </Button>
-          </div>,
-        ])}
-      />
-
-      <Modal
-        open={Boolean(removeTarget)}
-        title="Remove job posting"
-        onClose={() => setRemoveTarget(null)}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setRemoveTarget(null)}>
-              Close
-            </Button>
-            <Button variant="danger" onClick={confirmRemove}>
-              Confirm
-            </Button>
-          </>
-        }
-      >
-        <p className="po-body">Are you sure you want to remove this job posting?</p>
-      </Modal>
-      <Toast message={toast} />
+      <section className="mt-6">
+        <QueryStatus
+          loading={list.loading}
+          error={list.error}
+          empty={list.items.length === 0}
+          loadingLabel="Loading job postings…"
+          emptyTitle="No job postings match these filters."
+          emptyDescription="Employer vacancies appear here after they are saved. Try a different title, company or status."
+          onRetry={list.retry}
+        >
+          <Table
+            minWidthClass="min-w-[1080px]"
+            headers={[
+              'Job title',
+              'Company',
+              'Location',
+              'Employment type',
+              'Employer',
+              'Created',
+              'Published',
+              'Status',
+              'Actions',
+            ]}
+            rows={list.items.map((job) => [
+              job.title,
+              job.company.companyName,
+              job.location,
+              formatEmploymentType(job.employmentType),
+              job.createdBy?.fullName || '—',
+              formatJobDate(job.createdAt),
+              formatJobDate(job.publishedAt),
+              <Badge key={`${job.id}-status`} tone={jobStatusTone(job.status)} className="normal-case">
+                {formatJobStatus(job.status)}
+              </Badge>,
+              <Button key={`${job.id}-view`} size="sm" variant="secondary" to={adminJobPath(job.id)}>
+                View
+              </Button>,
+            ])}
+          />
+          <PaginationBar
+            page={list.meta.page}
+            totalPages={list.meta.totalPages}
+            total={list.meta.total}
+            noun="jobs"
+            disabled={list.loading}
+            onPrevious={() => list.goToPage(list.page - 1)}
+            onNext={() => list.goToPage(list.page + 1)}
+          />
+        </QueryStatus>
+      </section>
     </PageContent>
   )
 }

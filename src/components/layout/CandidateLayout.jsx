@@ -25,7 +25,9 @@ function getPageTitle(pathname) {
   if (pathname.includes('/learning/progress')) return 'Learning Progress'
   if (/\/learning\/[^/]+$/.test(pathname)) return 'Learning'
   if (pathname.endsWith('/apply')) return 'Apply'
+  if (/\/interviews\/[^/]+$/.test(pathname)) return 'Interview details'
   if (/\/jobs\/[^/]+$/.test(pathname)) return 'Job Details'
+  if (/\/resume\/[^/]+$/.test(pathname)) return 'Edit Resume'
   const segment = pathname.split('/').filter(Boolean).pop()
   return pageTitles[segment] || 'PeaceOne'
 }

@@ -22,6 +22,7 @@ import Applicants from './pages/employer/Applicants.jsx'
 import ApplicantDetails from './pages/employer/ApplicantDetails.jsx'
 import EmployerInterviews from './pages/employer/Interviews.jsx'
 import InterviewFormPage from './pages/employer/InterviewFormPage.jsx'
+import EmployerInterviewDetails from './pages/employer/InterviewDetails.jsx'
 import AdminDashboard from './pages/admin/Dashboard.jsx'
 import AdminUsers from './pages/admin/Users.jsx'
 import AdminUserDetails from './pages/admin/UserDetails.jsx'
@@ -31,11 +32,17 @@ import AdminLearningManagement from './pages/admin/LearningManagement.jsx'
 import AdminLearningContentForm from './pages/admin/LearningContentForm.jsx'
 import AdminContentMonitoring from './pages/admin/ContentMonitoring.jsx'
 import AdminReports from './pages/admin/Reports.jsx'
+import AdminMascoOccupations from './pages/admin/MascoOccupations.jsx'
+import AdminMascoOccupationDetails from './pages/admin/MascoOccupationDetails.jsx'
+import AdminMascoCrosswalks from './pages/admin/MascoCrosswalks.jsx'
 import AdminProfile from './pages/admin/Profile.jsx'
+import AdminPositionChangeRequests from './pages/admin/PositionChangeRequests.jsx'
+import AdminPositionChangeRequestDetails from './pages/admin/PositionChangeRequestDetails.jsx'
 import ProfilePage from './pages/shared/ProfilePage.jsx'
 import NotificationsPage from './pages/shared/NotificationsPage.jsx'
 import SkillsPage from './pages/shared/SkillsPage.jsx'
 import ResumePage from './pages/shared/ResumePage.jsx'
+import ResumeEditorPage from './pages/shared/ResumeEditorPage.jsx'
 import CareerTargetPage from './pages/shared/CareerTargetPage.jsx'
 import SkillGapPage from './pages/shared/SkillGapPage.jsx'
 import LearningRecommendationsPage from './pages/shared/LearningRecommendationsPage.jsx'
@@ -45,13 +52,13 @@ import CandidateJobsPage from './pages/shared/CandidateJobsPage.jsx'
 import CandidateJobDetailPage from './pages/shared/CandidateJobDetailPage.jsx'
 import ApplyPage from './pages/shared/ApplyPage.jsx'
 import ApplicationsPage from './pages/shared/ApplicationsPage.jsx'
+import ApplicationDetailPage from './pages/shared/ApplicationDetailPage.jsx'
 import InterviewsPage from './pages/shared/InterviewsPage.jsx'
+import InterviewDetailsPage from './pages/shared/InterviewDetailsPage.jsx'
 import SettingsPage from './pages/shared/SettingsPage.jsx'
 import DesignSystem from './pages/DesignSystem.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
 import { RequireAuth } from './auth/RequireAuth.jsx'
-import { jobSeekerProfile, studentProfile } from './data/candidateData.js'
-import { adminNotifications, employerNotifications, jobSeekerNotifications, studentNotifications } from './data/notifications.js'
 
 function App() {
   return (
@@ -77,10 +84,11 @@ function App() {
           }
         >
           <Route path="dashboard" element={<StudentDashboard />} />
-          <Route path="profile" element={<ProfilePage profile={studentProfile} />} />
-          <Route path="notifications" element={<NotificationsPage items={studentNotifications} />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="skills" element={<SkillsPage basePath="/student" />} />
-          <Route path="resume" element={<ResumePage role="student" />} />
+          <Route path="resume" element={<ResumePage basePath="/student" />} />
+          <Route path="resume/:resumeId" element={<ResumeEditorPage basePath="/student" />} />
           <Route path="career-target" element={<CareerTargetPage basePath="/student" />} />
           <Route path="skill-gap" element={<SkillGapPage basePath="/student" />} />
           <Route path="learning" element={<LearningRecommendationsPage basePath="/student" />} />
@@ -88,8 +96,11 @@ function App() {
           <Route path="learning/:contentId" element={<LearningDetailPage basePath="/student" />} />
           <Route path="jobs" element={<CandidateJobsPage basePath="/student" variant="student" />} />
           <Route path="jobs/:jobId" element={<CandidateJobDetailPage basePath="/student" variant="student" />} />
-          <Route path="jobs/:jobId/apply" element={<ApplyPage basePath="/student" variant="student" />} />
-          <Route path="applications" element={<ApplicationsPage variant="student" />} />
+          <Route path="jobs/:jobId/apply" element={<ApplyPage basePath="/student" />} />
+          <Route path="applications" element={<ApplicationsPage basePath="/student" />} />
+          <Route path="applications/:applicationId" element={<ApplicationDetailPage basePath="/student" />} />
+          <Route path="interviews" element={<InterviewsPage basePath="/student" />} />
+          <Route path="interviews/:interviewId" element={<InterviewDetailsPage basePath="/student" />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
@@ -102,17 +113,20 @@ function App() {
           }
         >
           <Route path="dashboard" element={<JobSeekerDashboard />} />
-          <Route path="profile" element={<ProfilePage profile={jobSeekerProfile} />} />
-          <Route path="notifications" element={<NotificationsPage items={jobSeekerNotifications} />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="skills" element={<SkillsPage basePath="/jobseeker" />} />
-          <Route path="resume" element={<ResumePage role="jobseeker" />} />
+          <Route path="resume" element={<ResumePage basePath="/jobseeker" />} />
+          <Route path="resume/:resumeId" element={<ResumeEditorPage basePath="/jobseeker" />} />
           <Route path="career-target" element={<CareerTargetPage basePath="/jobseeker" />} />
           <Route path="skill-gap" element={<SkillGapPage basePath="/jobseeker" />} />
           <Route path="jobs" element={<CandidateJobsPage basePath="/jobseeker" variant="jobseeker" />} />
           <Route path="jobs/:jobId" element={<CandidateJobDetailPage basePath="/jobseeker" variant="jobseeker" />} />
-          <Route path="jobs/:jobId/apply" element={<ApplyPage basePath="/jobseeker" variant="jobseeker" />} />
-          <Route path="applications" element={<ApplicationsPage variant="jobseeker" />} />
-          <Route path="interviews" element={<InterviewsPage />} />
+          <Route path="jobs/:jobId/apply" element={<ApplyPage basePath="/jobseeker" />} />
+          <Route path="applications" element={<ApplicationsPage basePath="/jobseeker" />} />
+          <Route path="applications/:applicationId" element={<ApplicationDetailPage basePath="/jobseeker" />} />
+          <Route path="interviews" element={<InterviewsPage basePath="/jobseeker" />} />
+          <Route path="interviews/:interviewId" element={<InterviewDetailsPage basePath="/jobseeker" />} />
           <Route path="learning" element={<LearningRecommendationsPage basePath="/jobseeker" />} />
           <Route path="learning/progress" element={<LearningProgressPage basePath="/jobseeker" />} />
           <Route path="learning/:contentId" element={<LearningDetailPage basePath="/jobseeker" />} />
@@ -139,7 +153,8 @@ function App() {
           <Route path="interviews" element={<EmployerInterviews />} />
           <Route path="interviews/create" element={<InterviewFormPage />} />
           <Route path="interviews/:interviewId/edit" element={<InterviewFormPage />} />
-          <Route path="notifications" element={<NotificationsPage items={employerNotifications} />} />
+          <Route path="interviews/:interviewId" element={<EmployerInterviewDetails />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
@@ -154,14 +169,19 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:userId" element={<AdminUserDetails />} />
+          <Route path="position-requests" element={<AdminPositionChangeRequests />} />
+          <Route path="position-requests/:requestId" element={<AdminPositionChangeRequestDetails />} />
           <Route path="jobs" element={<AdminJobMonitoring />} />
           <Route path="jobs/:jobId" element={<AdminJobModeration />} />
           <Route path="learning" element={<AdminLearningManagement />} />
           <Route path="learning/create" element={<AdminLearningContentForm />} />
           <Route path="learning/:contentId/edit" element={<AdminLearningContentForm />} />
           <Route path="content" element={<AdminContentMonitoring />} />
+          <Route path="masco" element={<AdminMascoOccupations />} />
+          <Route path="masco/crosswalks" element={<AdminMascoCrosswalks />} />
+          <Route path="masco/:code" element={<AdminMascoOccupationDetails />} />
           <Route path="reports" element={<AdminReports />} />
-          <Route path="notifications" element={<NotificationsPage items={adminNotifications} />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="profile" element={<AdminProfile />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

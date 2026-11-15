@@ -12,6 +12,9 @@ build
 # Uploads and private user files
 uploads/
 storage/uploads/
+storage/resumes/
+storage/applications/
+storage/
 
 # Logs, coverage and temporary files
 logs

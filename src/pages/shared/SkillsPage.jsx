@@ -309,14 +309,14 @@ function SkillsPage({ basePath }) {
   return (
     <PageContent
       title="My Skills"
-      description="Manage the skills used for career analysis and job matching."
+      description="Manage the skills used for career analysis and job matching. You can also identify skills from an uploaded resume."
       actions={
         <>
           <Button variant="outline" onClick={() => openAdd()} disabled={saving}>
             Add Skill
           </Button>
           <Button variant="secondary" to={`${basePath}/resume`}>
-            Upload Resume
+            My Resume
           </Button>
           <Button variant="secondary" to={`${basePath}/career-target`}>
             Career Target

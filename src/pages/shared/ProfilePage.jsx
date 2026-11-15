@@ -1,42 +1,59 @@
 import { useState } from 'react'
 import Button from '../../components/common/Button.jsx'
 import Badge from '../../components/common/Badge.jsx'
+import QueryStatus from '../../components/common/QueryStatus.jsx'
 import Toast from '../../components/common/Toast.jsx'
 import Card from '../../components/cards/Card.jsx'
 import PageContent from '../../components/layout/PageContent.jsx'
 import TextInput from '../../components/forms/TextInput.jsx'
 import SelectInput from '../../components/forms/SelectInput.jsx'
 import TextArea from '../../components/forms/TextArea.jsx'
-import { educationLevels } from '../../data/candidateData.js'
+import { useMeProfileForm } from '../../hooks/useMeProfileForm.js'
+import {
+  PROFILE_POSITION_UNAVAILABLE,
+  educationLevelOptions,
+  formatProfileAccountStatus,
+  formatProfileRole,
+  profileAccountStatusBadge,
+} from '../../api/meForm.js'
 
-function ProfilePage({ profile }) {
-  const [fullName, setFullName] = useState(profile.fullName)
-  const [email, setEmail] = useState(profile.email)
-  const [phone, setPhone] = useState(profile.phone)
-  const [educationLevel, setEducationLevel] = useState(profile.educationLevel)
-  const [fieldOfStudy, setFieldOfStudy] = useState(profile.fieldOfStudy)
-  const [institution, setInstitution] = useState(profile.institution)
-  const [graduationYear, setGraduationYear] = useState(profile.graduationYear)
-  const [location, setLocation] = useState(profile.location)
-  const [experienceSummary, setExperienceSummary] = useState(profile.experienceSummary)
-  const [requestedPosition, setRequestedPosition] = useState(
-    profile.currentPosition === 'Student' ? 'Job Seeker' : 'Student',
-  )
+function ProfilePage() {
+  const {
+    profile,
+    form,
+    fieldErrors,
+    loading,
+    saving,
+    loadError,
+    saveError,
+    retry,
+    updateField,
+    save,
+  } = useMeProfileForm()
   const [toast, setToast] = useState('')
+  const [requestedPositionOverride, setRequestedPositionOverride] = useState(null)
+  const [positionRequestError, setPositionRequestError] = useState('')
+
+  const currentPosition = profile ? formatProfileRole(profile.role) : ''
+  const requestedPosition =
+    requestedPositionOverride ?? (profile?.role === 'JOB_SEEKER' ? 'Student' : 'Job Seeker')
 
   function showToast(message) {
     setToast(message)
     window.setTimeout(() => setToast(''), 2500)
   }
 
-  function handleSave(event) {
+  async function handleSave(event) {
     event.preventDefault()
-    showToast('Profile changes saved.')
+    const saved = await save()
+    if (saved) {
+      showToast('Profile changes saved.')
+    }
   }
 
   function handlePositionRequest(event) {
     event.preventDefault()
-    showToast('Position change request submitted for review.')
+    setPositionRequestError(PROFILE_POSITION_UNAVAILABLE)
   }
 
   return (
@@ -44,125 +61,171 @@ function ProfilePage({ profile }) {
       title="My Profile"
       description="Keep your PeaceOne details current."
     >
-      <form className="space-y-6" onSubmit={handleSave}>
-        <Card>
-          <h2 className="po-section-title">Basic information</h2>
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <TextInput
-              id="profile-name"
-              label="Full Name"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-            />
-            <TextInput
-              id="profile-email"
-              label="Email Address"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-            <TextInput
-              id="profile-phone"
-              label="Phone Number"
-              type="tel"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-            />
-            <div>
-              <p className="po-label">Account Status</p>
-              <div className="flex h-11 items-center">
-                <Badge status="active">{profile.accountStatus}</Badge>
+      <QueryStatus
+        loading={loading}
+        error={loadError}
+        loadingLabel="Loading your profile…"
+        onRetry={retry}
+      >
+        <form className="space-y-6" onSubmit={handleSave}>
+          <Card>
+            <h2 className="po-section-title">Basic information</h2>
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <TextInput
+                id="profile-name"
+                label="Full Name"
+                required
+                value={form.fullName}
+                error={fieldErrors.fullName}
+                disabled={saving}
+                onChange={(event) => updateField('fullName', event.target.value)}
+              />
+              <TextInput
+                id="profile-email"
+                label="Email Address"
+                type="email"
+                value={profile?.email ?? ''}
+                disabled
+                helperText="Email cannot be changed from your profile."
+              />
+              <TextInput
+                id="profile-phone"
+                label="Phone Number"
+                type="tel"
+                value={form.phone}
+                error={fieldErrors.phone}
+                disabled={saving}
+                onChange={(event) => updateField('phone', event.target.value)}
+              />
+              <div>
+                <p className="po-label">Account Status</p>
+                <div className="flex h-11 items-center">
+                  <Badge status={profileAccountStatusBadge(profile?.accountStatus)}>
+                    {formatProfileAccountStatus(profile?.accountStatus)}
+                  </Badge>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card>
-          <h2 className="po-section-title">Education information</h2>
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <SelectInput
-              id="education-level"
-              label="Education Level"
-              value={educationLevel}
-              onChange={(event) => setEducationLevel(event.target.value)}
-              options={educationLevels.map((value) => ({ value, label: value }))}
-            />
-            <TextInput
-              id="field-of-study"
-              label="Field of Study"
-              value={fieldOfStudy}
-              onChange={(event) => setFieldOfStudy(event.target.value)}
-            />
-            <TextInput
-              id="institution"
-              label="Institution"
-              value={institution}
-              onChange={(event) => setInstitution(event.target.value)}
-            />
-            <TextInput
-              id="graduation-year"
-              label="Graduation Year"
-              value={graduationYear}
-              onChange={(event) => setGraduationYear(event.target.value)}
-            />
-          </div>
-        </Card>
-
-        <Card>
-          <h2 className="po-section-title">Career / experience information</h2>
-          <div className="mt-5 grid gap-5">
-            <TextInput
-              id="profile-location"
-              label="Location"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-            />
-            <TextArea
-              id="experience-summary"
-              label="Experience Summary"
-              value={experienceSummary}
-              onChange={(event) => setExperienceSummary(event.target.value)}
-            />
-          </div>
-        </Card>
-
-        <div className="flex justify-end">
-          <Button type="submit">Save Changes</Button>
-        </div>
-      </form>
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <Card>
-          <h2 className="po-section-title">Current Position</h2>
-          <p className="po-secondary mt-2">This is the logged-in position for this PeaceOne account.</p>
-          <p className="mt-4 text-lg font-semibold text-ink">{profile.currentPosition}</p>
-        </Card>
-
-        <Card>
-          <h2 className="po-section-title">Request Position Change</h2>
-          <p className="po-secondary mt-2">
-            Students and job seekers can request to change their current position when their career
-            status changes. An administrator will review the request.
-          </p>
-          <form className="mt-5 space-y-4" onSubmit={handlePositionRequest}>
-            <div>
-              <p className="po-label">Current Position</p>
-              <p className="text-sm font-medium text-ink">{profile.currentPosition}</p>
+          <Card>
+            <h2 className="po-section-title">Education information</h2>
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <SelectInput
+                id="education-level"
+                label="Education Level"
+                value={form.educationLevel}
+                error={fieldErrors.educationLevel}
+                disabled={saving}
+                onChange={(event) => updateField('educationLevel', event.target.value)}
+                options={educationLevelOptions}
+              />
+              <TextInput
+                id="field-of-study"
+                label="Field of Study"
+                value={form.fieldOfStudy}
+                error={fieldErrors.fieldOfStudy}
+                disabled={saving}
+                onChange={(event) => updateField('fieldOfStudy', event.target.value)}
+              />
+              <TextInput
+                id="institution"
+                label="Institution"
+                value={form.institution}
+                error={fieldErrors.institution}
+                disabled={saving}
+                onChange={(event) => updateField('institution', event.target.value)}
+              />
+              <TextInput
+                id="graduation-year"
+                label="Graduation Year"
+                inputMode="numeric"
+                autoComplete="off"
+                value={form.graduationYear}
+                error={fieldErrors.graduationYear}
+                disabled={saving}
+                onChange={(event) => updateField('graduationYear', event.target.value)}
+                helperText="Enter a 4-digit year from 1950 to 2100."
+              />
             </div>
-            <SelectInput
-              id="requested-position"
-              label="Requested Position"
-              value={requestedPosition}
-              onChange={(event) => setRequestedPosition(event.target.value)}
-              options={[
-                { value: 'Student', label: 'Student' },
-                { value: 'Job Seeker', label: 'Job Seeker' },
-              ]}
-            />
-            <Button type="submit">Submit Position Change Request</Button>
-          </form>
-        </Card>
-      </div>
+          </Card>
+
+          <Card>
+            <h2 className="po-section-title">Career / experience information</h2>
+            <div className="mt-5 grid gap-5">
+              <TextInput
+                id="profile-location"
+                label="Location"
+                value={form.location}
+                error={fieldErrors.location}
+                disabled={saving}
+                onChange={(event) => updateField('location', event.target.value)}
+              />
+              <TextArea
+                id="experience-summary"
+                label="Experience Summary"
+                value={form.experienceSummary}
+                error={fieldErrors.experienceSummary}
+                disabled={saving}
+                onChange={(event) => updateField('experienceSummary', event.target.value)}
+              />
+            </div>
+          </Card>
+
+          {saveError ? (
+            <p className="po-helper po-helper-error mt-0" role="alert">
+              {saveError}
+            </p>
+          ) : null}
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Saving…' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <Card>
+            <h2 className="po-section-title">Current Position</h2>
+            <p className="po-secondary mt-2">This is the logged-in position for this PeaceOne account.</p>
+            <p className="mt-4 text-lg font-semibold text-ink">{currentPosition}</p>
+          </Card>
+
+          <Card>
+            <h2 className="po-section-title">Request Position Change</h2>
+            <p className="po-secondary mt-2">
+              Students and job seekers can request to change their current position when their career
+              status changes. An administrator will review the request.
+            </p>
+            <form className="mt-5 space-y-4" onSubmit={handlePositionRequest}>
+              <div>
+                <p className="po-label">Current Position</p>
+                <p className="text-sm font-medium text-ink">{currentPosition}</p>
+              </div>
+              <SelectInput
+                id="requested-position"
+                label="Requested Position"
+                value={requestedPosition}
+                onChange={(event) => {
+                  setRequestedPositionOverride(event.target.value)
+                  setPositionRequestError('')
+                }}
+                options={[
+                  { value: 'Student', label: 'Student' },
+                  { value: 'Job Seeker', label: 'Job Seeker' },
+                ]}
+              />
+              {positionRequestError ? (
+                <p className="po-helper po-helper-error mt-0" role="alert">
+                  {positionRequestError}
+                </p>
+              ) : null}
+              <Button type="submit">Submit Position Change Request</Button>
+            </form>
+          </Card>
+        </div>
+      </QueryStatus>
 
       <Toast message={toast} />
     </PageContent>
