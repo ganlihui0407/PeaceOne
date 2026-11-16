@@ -8,6 +8,7 @@ import {
   parseJob,
 } from './jobs.js'
 import { saveBlobAsFile } from './resumes.js'
+import { parseUserSkill } from './userSkills.js'
 
 export const APPLICATIONS_UNAVAILABLE = 'Application data is unavailable right now.'
 export const APPLICATION_ALREADY_EXISTS = 'You have already applied for this job'
@@ -22,6 +23,10 @@ export const APPLICATION_SNAPSHOT_COPY =
   'PeaceOne keeps an independent copy of the selected resume. Later edits or deletion of My Resume do not change this submission.'
 export const APPLICATION_WITHDRAWN_COPY =
   'This application has been withdrawn. Reapplication for the same job is not permitted.'
+export const APPLICATION_OFFERED_COPY =
+  'The employer recorded a job offer. PeaceOne does not support accepting or declining offers in this workspace.'
+export const EMPLOYER_OFFER_COPY =
+  'Record an offer for this candidate. PeaceOne notifies the candidate and stores OFFERED status. Candidates cannot accept or decline offers here.'
 export const APPLICATION_EMPTY = {
   title: 'No applications yet.',
   description: 'Submitted applications appear here after you apply for a published job.',
@@ -143,7 +148,12 @@ export function canRejectEmployerApplication(application) {
     application?.status === 'SUBMITTED'
     || application?.status === 'UNDER_REVIEW'
     || application?.status === 'SHORTLISTED'
+    || application?.status === 'INTERVIEW'
   )
+}
+
+export function canOfferEmployerApplication(application) {
+  return application?.status === 'SHORTLISTED' || application?.status === 'INTERVIEW'
 }
 
 export function reviewNoteBody(reviewNote) {
@@ -184,6 +194,9 @@ function parseApplicant(value, fallback = APPLICATIONS_UNAVAILABLE) {
     institution: optionalString(applicant.institution),
     graduationYear: optionalInteger(applicant.graduationYear, fallback),
     experienceSummary: optionalString(applicant.experienceSummary),
+    skills: Array.isArray(applicant.skills)
+      ? applicant.skills.map((item) => parseUserSkill(item, fallback))
+      : [],
   }
 }
 
@@ -496,6 +509,10 @@ export async function shortlistEmployerApplication(id, { reviewNote, signal } = 
 
 export async function rejectEmployerApplication(id, { reviewNote, signal } = {}) {
   return mutateEmployerApplication(id, 'reject', reviewNote, signal)
+}
+
+export async function offerEmployerApplication(id, { reviewNote, signal } = {}) {
+  return mutateEmployerApplication(id, 'offer', reviewNote, signal)
 }
 
 export async function downloadEmployerApplicationPdf(application, { signal } = {}) {

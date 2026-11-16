@@ -8,8 +8,8 @@ import {
   AdminActivityUnavailableSection,
   AdminApplicationStatsSection,
   AdminInterviewStatsSection,
+  AdminPlatformStatsSection,
   AdminShortcutsSection,
-  AdminUnavailableOverview,
 } from '../shared/StaffAdminDashboardPanels.jsx'
 
 function AdminDashboard() {
@@ -33,9 +33,8 @@ function AdminDashboard() {
                     {greetingForHour()}, {data.firstName}
                   </h1>
                   <p className="po-secondary mt-1">
-                    Your signed-in administrator profile is shown here. Job moderation is on Job Monitoring.
-                    Application and interview totals below are live aggregates. User, learning and activity
-                    totals appear only when a live API stores them.
+                    Your signed-in administrator profile is shown here. User, company, job, application,
+                    interview and learning totals below are live PostgreSQL aggregates.
                   </p>
                   <p className="po-secondary mt-2">
                     {data.roleLabel} · {data.accountStatusLabel} · {data.email}
@@ -44,9 +43,9 @@ function AdminDashboard() {
               </div>
             </Card>
 
+            <AdminPlatformStatsSection stats={data.platformStats} />
             <AdminApplicationStatsSection stats={data.applicationStats} />
             <AdminInterviewStatsSection stats={data.interviewStats} />
-            <AdminUnavailableOverview />
             <AdminShortcutsSection />
             <AdminActivityUnavailableSection />
           </>

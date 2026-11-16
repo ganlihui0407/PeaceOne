@@ -18,8 +18,6 @@ import { validateBody, validateParams, validateQuery } from '../middleware/valid
 
 export const jobsRouter = Router();
 
-jobsRouter.use(requireAuth, requireRole('STUDENT', 'JOB_SEEKER'));
-
 function sendJobError(res, error) {
   if (error instanceof JobError || error instanceof ApplicationError) {
     res.status(error.status).json({ error: error.message });
@@ -37,8 +35,26 @@ jobsRouter.get(
   }),
 );
 
+jobsRouter.get(
+  '/:id',
+  validateParams(jobIdParamsSchema),
+  asyncHandler(async (req, res) => {
+    try {
+      const job = await findCandidateJob(prisma, req.validatedParams.id);
+      res.status(200).json({ job });
+    } catch (error) {
+      if (sendJobError(res, error)) {
+        return;
+      }
+      throw error;
+    }
+  }),
+);
+
 jobsRouter.post(
   '/:id/applications',
+  requireAuth,
+  requireRole('STUDENT', 'JOB_SEEKER'),
   validateParams(jobIdParamsSchema),
   validateBody(submitApplicationBodySchema),
   asyncHandler(async (req, res) => {
@@ -50,22 +66,6 @@ jobsRouter.post(
         req.validatedBody.resumeId,
       );
       res.status(201).json({ application });
-    } catch (error) {
-      if (sendJobError(res, error)) {
-        return;
-      }
-      throw error;
-    }
-  }),
-);
-
-jobsRouter.get(
-  '/:id',
-  validateParams(jobIdParamsSchema),
-  asyncHandler(async (req, res) => {
-    try {
-      const job = await findCandidateJob(prisma, req.validatedParams.id);
-      res.status(200).json({ job });
     } catch (error) {
       if (sendJobError(res, error)) {
         return;

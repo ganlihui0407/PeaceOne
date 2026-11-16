@@ -6,6 +6,11 @@ export const ME_PROFILE_UNAVAILABLE = 'Profile data is unavailable right now.'
 export const ME_ROLES = ['STUDENT', 'JOB_SEEKER', 'COMPANY_STAFF', 'ADMIN']
 export const ME_ACCOUNT_STATUSES = ['ACTIVE', 'SUSPENDED']
 export const EDUCATION_LEVELS = ['Diploma', "Bachelor's Degree", "Master's Degree", 'Other']
+const EDUCATION_LEVEL_ALIASES = {
+  Bachelor: "Bachelor's Degree",
+  Master: "Master's Degree",
+  'Bachelor’s Degree': "Bachelor's Degree",
+}
 export const GRADUATION_YEAR_MIN = 1950
 export const GRADUATION_YEAR_MAX = 2100
 
@@ -48,10 +53,11 @@ function optionalEducationLevel(value, fallback = ME_PROFILE_UNAVAILABLE) {
   if (value == null || value === '') {
     return null
   }
-  if (!EDUCATION_LEVELS.includes(value)) {
+  const normalized = EDUCATION_LEVEL_ALIASES[value] ?? value
+  if (!EDUCATION_LEVELS.includes(normalized)) {
     throw new ApiError(fallback, 500)
   }
-  return value
+  return normalized
 }
 
 function optionalGraduationYear(value, fallback = ME_PROFILE_UNAVAILABLE) {

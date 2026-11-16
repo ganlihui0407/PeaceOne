@@ -10,7 +10,7 @@ import { PROFICIENCY_LEVELS } from './userSkills.js'
 
 export const SKILL_GAP_UNAVAILABLE = 'Skill gap comparison is unavailable right now.'
 export const SKILL_GAP_DISCLAIMER =
-  'Not recorded means the skill is not in your saved PeaceOne list. It does not mean you lack that skill.'
+  'Occupation-linked coverage counts only recorded UserSkill rows whose ESCO skill identifier appears on this occupation. Not recorded means the occupation skill is not in your saved PeaceOne list. It does not mean you lack that skill. Recorded skills that are not on the occupation list are listed separately and do not inflate the occupation-linked count.'
 export const SKILL_GAP_EMPTY_SKILLS = {
   title: 'No skills recorded yet.',
   description:
@@ -70,6 +70,17 @@ export function parseSkillGapItem(item, fallback = SKILL_GAP_UNAVAILABLE) {
   }
 }
 
+function parseUnmatchedRecordedSkill(item, fallback) {
+  const row = requireObject(item, fallback)
+  if (!PROFICIENCY_LEVELS.includes(row.proficiencyLevel)) {
+    throw new ApiError(fallback, 500)
+  }
+  return {
+    proficiencyLevel: row.proficiencyLevel,
+    skill: parseSkillSummary(row.skill, fallback),
+  }
+}
+
 export function parseSkillGapResult(payload, fallback = SKILL_GAP_UNAVAILABLE) {
   const body = requireObject(payload, fallback)
   const totalsBody = requireObject(body.totals, fallback)
@@ -77,6 +88,9 @@ export function parseSkillGapResult(payload, fallback = SKILL_GAP_UNAVAILABLE) {
   if (!items) {
     throw new ApiError(fallback, 500)
   }
+  const unmatchedRecordedSkills = Array.isArray(body.unmatchedRecordedSkills)
+    ? body.unmatchedRecordedSkills.map((item) => parseUnmatchedRecordedSkill(item, fallback))
+    : []
   const totals = {
     relations: requireInteger(totalsBody.relations, fallback),
     essential: parseRelationTotals(totalsBody.essential, fallback),
@@ -88,9 +102,19 @@ export function parseSkillGapResult(payload, fallback = SKILL_GAP_UNAVAILABLE) {
   if (totals.relations !== items.length) {
     throw new ApiError(fallback, 500)
   }
+  const matchedOccupationSkillCount = Number.isInteger(body.matchedOccupationSkillCount)
+    ? requireInteger(body.matchedOccupationSkillCount, fallback)
+    : items.filter((item) => item.recorded).length
+  const recordedSkillCount = requireInteger(body.recordedSkillCount, fallback)
+  const coverageExplanation = typeof body.coverageExplanation === 'string' && body.coverageExplanation.length > 0
+    ? body.coverageExplanation
+    : ''
   return {
     occupation: parseOccupationSummary(body.occupation, fallback),
-    recordedSkillCount: requireInteger(body.recordedSkillCount, fallback),
+    recordedSkillCount,
+    matchedOccupationSkillCount,
+    unmatchedRecordedSkills,
+    coverageExplanation,
     totals,
     items,
   }

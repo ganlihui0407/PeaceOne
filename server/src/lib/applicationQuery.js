@@ -3,6 +3,7 @@ import { normalizeLabelSearch, paginationMeta } from './escoQuery.js';
 import { findCandidateJob, JobError, serializeJob } from './jobQuery.js';
 import { generateResumePdf } from './resumePdf.js';
 import { serializeResume } from './resumeQuery.js';
+import { serializeUserSkill } from './userSkillQuery.js';
 import { readStoredResumeFile } from './resumeStorage.js';
 import { contentDispositionFor } from './resumeFileQuery.js';
 import { pdfFilenameFromTitle } from './resumeViewModel.js';
@@ -54,7 +55,11 @@ export const EMPLOYER_APPLICATION_ACTIONS = {
   },
   reject: {
     toStatus: 'REJECTED',
-    fromStatuses: ['SUBMITTED', 'UNDER_REVIEW', 'SHORTLISTED'],
+    fromStatuses: ['SUBMITTED', 'UNDER_REVIEW', 'SHORTLISTED', 'INTERVIEW'],
+  },
+  offer: {
+    toStatus: 'OFFERED',
+    fromStatuses: ['SHORTLISTED', 'INTERVIEW'],
   },
 };
 
@@ -249,6 +254,20 @@ const applicationDetailInclude = {
       institution: true,
       graduationYear: true,
       experienceSummary: true,
+      skills: {
+        include: {
+          skill: {
+            select: {
+              id: true,
+              sourceUri: true,
+              preferredLabel: true,
+              skillType: true,
+              sourceSystem: true,
+            },
+          },
+        },
+        orderBy: { skill: { preferredLabel: 'asc' } },
+      },
     },
   },
 };
@@ -348,6 +367,9 @@ function serializeApplicant(applicant) {
     institution: applicant.institution ?? null,
     graduationYear: applicant.graduationYear ?? null,
     experienceSummary: applicant.experienceSummary ?? null,
+    skills: Array.isArray(applicant.skills)
+      ? applicant.skills.map((skill) => serializeUserSkill(skill))
+      : [],
   };
 }
 

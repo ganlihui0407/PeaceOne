@@ -86,7 +86,7 @@ function MascoOccupations() {
           <div className="lg:col-span-4">
             <SearchInput
               id="masco-occupation-search"
-              label="Search occupations"
+              label="Search MASCO occupations"
               value={list.input}
               placeholder="Title or occupation code"
               onChange={(event) => list.setInput(event.target.value)}

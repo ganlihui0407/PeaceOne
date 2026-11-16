@@ -1,6 +1,6 @@
 import { ACCOUNT_UNAVAILABLE_ERROR, ACCOUNT_UNAVAILABLE_MESSAGE } from '../auth/sessionStatus.js'
 import { ApiError, apiRequest } from './client.js'
-import { isAbortError } from './esco.js'
+import { buildSearchParams, isAbortError } from './esco.js'
 
 export const COMPANY_UNAVAILABLE = 'Company profile data is unavailable right now.'
 export const COMPANY_EMPTY = {
@@ -157,16 +157,61 @@ export function buildCompanyUpdate(input = {}) {
   return body
 }
 
+export async function fetchAdminCompanies({ q, page = 1, limit = 20, signal } = {}) {
+  const payload = await requestCompany(
+    `/api/admin/companies${buildSearchParams({ q, page, limit })}`,
+    { signal },
+  )
+  const body = requireObject(payload)
+  const companies = Array.isArray(body.companies) ? body.companies.map(parseAdminCompany) : []
+  return {
+    items: companies,
+    page: Number(body.page) || 1,
+    limit: Number(body.limit) || 20,
+    total: Number(body.total) || 0,
+    totalPages: Number(body.totalPages) || 0,
+  }
+}
+
+function optionalCount(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+export function parseAdminCompany(value) {
+  const company = parseCompany(value)
+  if (!company) {
+    throw new ApiError(COMPANY_UNAVAILABLE, 500)
+  }
+  return {
+    ...company,
+    staffCount: optionalCount(value.staffCount),
+    jobCount: optionalCount(value.jobCount),
+    publishedJobCount: optionalCount(value.publishedJobCount),
+    draftJobCount: optionalCount(value.draftJobCount),
+    closedJobCount: optionalCount(value.closedJobCount),
+    suspendedJobCount: optionalCount(value.suspendedJobCount),
+  }
+}
+
 export async function fetchAdminCompany(id, { signal } = {}) {
   if (typeof id !== 'string' || id.length === 0) {
     throw new ApiError('Invalid request', 400)
   }
   const payload = await requestCompany(`/api/admin/companies/${encodeURIComponent(id)}`, { signal })
-  const company = parseCompany(payload?.company)
-  if (!company) {
-    throw new ApiError(COMPANY_UNAVAILABLE, 500)
+  const company = parseAdminCompany(payload?.company)
+  return {
+    company,
+    staff: Array.isArray(payload?.staff)
+      ? payload.staff.map((member) => ({
+        id: member.id,
+        fullName: member.fullName,
+        email: member.email,
+        role: member.role,
+        accountStatus: member.accountStatus,
+        jobTitle: member.jobTitle ?? null,
+      }))
+      : [],
   }
-  return company
 }
 
 export { isAbortError }

@@ -212,6 +212,18 @@ test('duplicate required skill IDs and duplicate candidate rows are collapsed', 
   assert.equal(result.proficiencyGaps[0].candidateLevel, 'Beginner')
 })
 
+test('updated UserSkill proficiency changes recorded-skill overlap percent', () => {
+  const required = [requiredSkill(PYTHON, 'Python', 'Intermediate')]
+  const beginner = compareJobSkillOverlap(required, [candidateSkill(PYTHON, 'Python', 'Beginner')])
+  const intermediate = compareJobSkillOverlap(required, [candidateSkill(PYTHON, 'Python', 'Intermediate')])
+  assert.equal(beginner.matchedCount, 0)
+  assert.equal(beginner.proficiencyGapCount, 1)
+  assert.equal(beginner.overlapPercent, 0)
+  assert.equal(intermediate.matchedCount, 1)
+  assert.equal(intermediate.overlapPercent, 100)
+  assert.equal(JOB_SKILL_MATCH_DISCLAIMER.includes('AI compatibility'), true)
+})
+
 test('null candidate skills must not be treated as an empty recorded list', () => {
   assert.equal(canComputeJobSkillOverlap(null), false)
   assert.equal(canComputeJobSkillOverlap(undefined), false)
@@ -244,6 +256,7 @@ test('job details and listing wire recorded-skill overlap without AI claims', ()
   assert.equal(panel.includes('fetchSavedSkills'), false)
   assert.equal(panel.includes('createSavedSkill'), false)
   assert.equal(panel.includes('updateSavedSkill'), false)
+  assert.equal(panel.includes('audience="employer"') || panel.includes("audience === 'employer'"), true)
   assert.equal(panel.includes('AI compatibility'), false)
   assert.equal(panel.includes('job success'), false)
   assert.equal(list.includes('useRecordedSkills'), true)

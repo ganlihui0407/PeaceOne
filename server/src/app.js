@@ -16,6 +16,12 @@ import { mePositionChangeRequestsRouter } from './routes/mePositionChangeRequest
 import { adminPositionChangeRequestsRouter } from './routes/adminPositionChangeRequests.js';
 import { meCompanyRouter } from './routes/meCompany.js';
 import { adminCompaniesRouter } from './routes/adminCompanies.js';
+import { adminUsersRouter } from './routes/adminUsers.js';
+import {
+  adminContentMonitoringRouter,
+  adminReportsRouter,
+  adminStatsRouter,
+} from './routes/adminPlatform.js';
 import { meResumesRouter } from './routes/meResumes.js';
 import { meJobsRouter } from './routes/meJobs.js';
 import { adminJobsRouter } from './routes/adminJobs.js';
@@ -27,6 +33,9 @@ import { meInterviewsRouter } from './routes/meInterviews.js';
 import { employerInterviewsRouter } from './routes/employerInterviews.js';
 import { adminInterviewsRouter } from './routes/adminInterviews.js';
 import { meNotificationsRouter } from './routes/meNotifications.js';
+import { learningRouter } from './routes/learning.js';
+import { meLearningRouter } from './routes/meLearning.js';
+import { adminLearningRouter } from './routes/adminLearning.js';
 import { meRouter } from './routes/me.js';
 
 export function createApp(options = {}) {
@@ -76,6 +85,10 @@ export function createApp(options = {}) {
   app.use('/api/me/position-change-requests', mePositionChangeRequestsRouter);
   app.use('/api/admin/position-change-requests', adminPositionChangeRequestsRouter);
   app.use('/api/me/company', meCompanyRouter);
+  app.use('/api/admin/users', adminUsersRouter);
+  app.use('/api/admin/stats', adminStatsRouter);
+  app.use('/api/admin/reports', adminReportsRouter);
+  app.use('/api/admin/content-monitoring', adminContentMonitoringRouter);
   app.use('/api/admin/companies', adminCompaniesRouter);
   app.use('/api/me/resumes', meResumesRouter);
   app.use('/api/me/jobs', meJobsRouter);
@@ -88,6 +101,9 @@ export function createApp(options = {}) {
   app.use('/api/employer/interviews', employerInterviewsRouter);
   app.use('/api/admin/interviews', adminInterviewsRouter);
   app.use('/api/me/notifications', meNotificationsRouter);
+  app.use('/api/learning', learningRouter);
+  app.use('/api/me/learning', meLearningRouter);
+  app.use('/api/admin/learning', adminLearningRouter);
   app.use('/api/me', meRouter);
 
   if (typeof options.registerTestRoutes === 'function') {

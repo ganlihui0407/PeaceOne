@@ -22,6 +22,7 @@ import {
   buildStaffDashboard,
   fetchAdminDashboard,
   fetchStaffDashboard,
+  staffJobCountsFromApplicationStats,
   staffProfileHighlights,
 } from './staffAdminDashboard.js'
 
@@ -293,6 +294,14 @@ test('fetchAdminDashboard loads the signed-in profile and aggregate application 
         companiesWithInterviews: 0,
       })
     }
+    if (path === '/api/admin/stats') {
+      return jsonResponse(200, {
+        users: { total: 0, students: 0, jobSeekers: 0, companyStaff: 0, admins: 0 },
+        companies: { total: 0 },
+        jobs: { published: 0, draft: 0 },
+        learning: { publishedCourses: 0, enrollments: 0, completed: 0 },
+      })
+    }
     throw new Error(`unexpected ${path}`)
   }
 
@@ -306,6 +315,7 @@ test('fetchAdminDashboard loads the signed-in profile and aggregate application 
   assert.equal(calls.some((call) => call.path === '/api/admin/interviews/stats'), true)
   assert.equal(calls.some((call) => call.path === '/api/me' && call.method === 'GET'), true)
   assert.equal(calls.some((call) => call.path === '/api/admin/applications/stats'), true)
+  assert.equal(calls.some((call) => call.path === '/api/admin/stats'), true)
   assert.equal(dashboard.applicationStats.applications, undefined)
   assert.equal(
     calls.every((call) => !String(call.path).includes('userId=')),
@@ -322,21 +332,31 @@ test('staff and admin dashboards stay empty when the signed-in profile has no ex
   assert.equal(staff.jobTitle, null)
   assert.equal(admin.phone, null)
   assert.equal(STAFF_JOBS_UNAVAILABLE.title.includes('not connected'), false)
-  assert.equal(STAFF_JOBS_UNAVAILABLE.title.includes('Jobs'), true)
-  assert.equal(STAFF_JOBS_UNAVAILABLE.description.includes('does not invent vacancy counts'), true)
+  assert.equal(STAFF_JOBS_UNAVAILABLE.title.includes('job postings'), true)
+  assert.equal(STAFF_JOBS_UNAVAILABLE.description.includes('stored jobs'), true)
+  assert.deepEqual(
+    staffJobCountsFromApplicationStats({
+      jobs: [
+        { status: 'PUBLISHED' },
+        { status: 'PUBLISHED' },
+        { status: 'DRAFT' },
+      ],
+    }),
+    { total: 3, published: 2, draft: 1, closed: 0, suspended: 0 },
+  )
   assert.equal(STAFF_APPLICATIONS_EMPTY.title.includes('No applications'), true)
   assert.equal(STAFF_APPLICATIONS_EMPTY.description.includes('zero'), true)
   assert.equal(STAFF_INTERVIEWS_UNAVAILABLE.title.includes('upcoming'), true)
   assert.equal(STAFF_COMPANY_EMPTY.title.includes('saved yet'), true)
-  assert.equal(ADMIN_USERS_UNAVAILABLE.title.includes('not connected'), true)
+  assert.equal(ADMIN_USERS_UNAVAILABLE.title.includes('PostgreSQL'), true)
   assert.equal(ADMIN_JOBS_UNAVAILABLE.title.includes('not connected'), false)
   assert.equal(ADMIN_JOBS_UNAVAILABLE.title.includes('Job Monitoring'), true)
-  assert.equal(ADMIN_LEARNING_UNAVAILABLE.title.includes('not connected'), true)
+  assert.equal(ADMIN_LEARNING_UNAVAILABLE.title.includes('PostgreSQL'), true)
   assert.equal(ADMIN_ACTIVITY_UNAVAILABLE.title.includes('not connected'), true)
   assert.equal(STAFF_PROFILE_INCOMPLETE.description.includes('Empty fields stay empty'), true)
   assert.deepEqual(
     ADMIN_SHORTCUTS.map((item) => item.to),
-    ['/admin/users', '/admin/jobs', '/admin/learning', '/admin/reports'],
+    ['/admin/users', '/admin/companies', '/admin/jobs', '/admin/learning', '/admin/reports'],
   )
 })
 
@@ -414,6 +434,8 @@ test('employer and admin dashboards use signed-in profile data and drop mock rec
   }
 
   assert.equal(panels.includes('STAFF_JOBS_UNAVAILABLE'), true)
+  assert.equal(panels.includes('StaffJobCountsSection'), true)
+  assert.equal(panels.includes('StaffJobsUnavailableSection'), false)
   assert.equal(panels.includes('StaffApplicationStatsSection'), true)
   assert.equal(panels.includes('STAFF_APPLICATIONS_EMPTY'), true)
   assert.equal(panels.includes('StaffApplicantsUnavailableSection'), false)
@@ -422,6 +444,8 @@ test('employer and admin dashboards use signed-in profile data and drop mock rec
   assert.equal(panels.includes('AdminInterviewStatsSection'), true)
   assert.equal(panels.includes('STAFF_COMPANY_EMPTY'), true)
   assert.equal(employer.includes('StaffCompanySection'), true)
+  assert.equal(employer.includes('StaffJobCountsSection'), true)
+  assert.equal(employer.includes('StaffJobsUnavailableSection'), false)
   assert.equal(employer.includes('StaffApplicationStatsSection'), true)
   assert.equal(employer.includes('StaffUpcomingInterviewsSection'), true)
   assert.equal(employer.includes('Applicants and interviews are not stored yet'), false)
@@ -430,7 +454,7 @@ test('employer and admin dashboards use signed-in profile data and drop mock rec
   assert.equal(employer.includes('Create Job Posting'), true)
   assert.equal(admin.includes('AdminApplicationStatsSection'), true)
   assert.equal(admin.includes('AdminInterviewStatsSection'), true)
-  assert.equal(admin.includes('AdminUnavailableOverview'), true)
+  assert.equal(admin.includes('AdminPlatformStatsSection'), true)
   assert.equal(admin.includes('AdminShortcutsSection'), true)
 
   assert.equal(app.includes('<EmployerDashboard />'), true)

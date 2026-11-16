@@ -162,6 +162,7 @@ test('buildCandidateDashboard uses recorded/not recorded counts and no readiness
   assert.equal(dashboard.notRecordedForTarget, 2)
   assert.equal(dashboard.stats[0].value, '1')
   assert.equal(dashboard.stats[1].value, 'Set')
+  assert.equal(dashboard.stats[2].label, 'Occupation-linked')
   assert.equal(dashboard.stats[2].value, '1 of 3')
   assert.equal(dashboard.stats[3].value, '2')
   assert.equal(dashboard.topics[0].skill.preferredLabel, 'network security')

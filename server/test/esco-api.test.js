@@ -234,3 +234,60 @@ test('lists skills with label search, skillType filter and pagination', async ()
   const page2 = await getJson('/api/skills?page=2&limit=10');
   assert.equal(page1.json.items[0].id !== page2.json.items[0].id, true);
 });
+
+test('searches ESCO skills by identifier, URI, case, whitespace and stored alt labels', async () => {
+  const python = await prisma.skill.findFirst({
+    where: { preferredLabel: 'Python (computer programming)', sourceSystem: 'ESCO' },
+    select: { id: true, sourceUri: true, preferredLabel: true, sourceMetadata: true },
+  });
+  assert.ok(python);
+
+  const byLabel = await getJson('/api/skills?q=PYTHON');
+  assert.equal(byLabel.response.status, 200);
+  assert.ok(byLabel.json.items.some((item) => item.id === python.id));
+
+  const fragment = python.sourceUri.split('/').at(-1).slice(0, 8);
+  const byFragment = await getJson(`/api/skills?q=${encodeURIComponent(fragment)}`);
+  assert.equal(byFragment.response.status, 200);
+  assert.ok(byFragment.json.items.some((item) => item.id === python.id));
+
+  const httpsUri = python.sourceUri.replace(/^http:\/\//i, 'https://');
+  const byHttps = await getJson(`/api/skills?q=${encodeURIComponent(httpsUri)}`);
+  assert.equal(byHttps.response.status, 200);
+  assert.equal(byHttps.json.total, 1);
+  assert.equal(byHttps.json.items[0].id, python.id);
+
+  const byId = await getJson(`/api/skills?q=${python.id}`);
+  assert.equal(byId.response.status, 200);
+  assert.equal(byId.json.total, 1);
+  assert.equal(byId.json.items[0].id, python.id);
+
+  const whitespace = await getJson('/api/skills?q=%20%20');
+  assert.equal(whitespace.response.status, 200);
+  assert.equal(whitespace.json.total, 13939);
+
+  const injection = await getJson('/api/skills?q=%25%20OR%201%3D1');
+  assert.equal(injection.response.status, 200);
+  assert.equal(injection.json.total, 0);
+
+  const tooLong = await getJson(`/api/skills?q=${'a'.repeat(501)}`);
+  assert.equal(tooLong.response.status, 400);
+
+  const altRow = await prisma.$queryRaw`
+    SELECT preferred_label, source_uri, source_metadata->>'altLabels' AS alt_labels
+    FROM skills
+    WHERE source_system = 'ESCO'
+      AND COALESCE(btrim(source_metadata->>'altLabels'), '') <> ''
+    LIMIT 1
+  `;
+  if (altRow.length > 0) {
+    const firstAlt = String(altRow[0].alt_labels)
+      .split(/\r?\n|\|/g)
+      .map((item) => item.trim())
+      .find(Boolean);
+    assert.ok(firstAlt);
+    const byAlt = await getJson(`/api/skills?q=${encodeURIComponent(firstAlt)}`);
+    assert.equal(byAlt.response.status, 200);
+    assert.ok(byAlt.json.items.some((item) => item.sourceUri === altRow[0].source_uri));
+  }
+});

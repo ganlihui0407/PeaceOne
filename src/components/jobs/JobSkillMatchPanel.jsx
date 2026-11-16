@@ -7,6 +7,8 @@ import DetailItem from '../ui/DetailItem.jsx'
 import {
   JOB_SKILL_MATCH_DISCLAIMER,
   JOB_SKILL_MATCH_EMPTY_CANDIDATE,
+  JOB_SKILL_MATCH_EMPTY_EMPLOYER,
+  JOB_SKILL_MATCH_EMPLOYER_INTRO,
   JOB_SKILL_MATCH_UNAVAILABLE,
   canComputeJobSkillOverlap,
   candidateSkillGapPath,
@@ -38,7 +40,16 @@ function SkillTable({ headers, rows, emptyTitle }) {
   )
 }
 
-function JobSkillMatchPanel({ job, skills, skillsLoading, skillsError, onRetrySkills, basePath }) {
+function JobSkillMatchPanel({
+  job,
+  skills,
+  skillsLoading = false,
+  skillsError = '',
+  onRetrySkills,
+  basePath,
+  audience = 'candidate',
+}) {
+  const isEmployer = audience === 'employer'
   const skillsPath = candidateSkillsPath(basePath)
   const skillGapPath = candidateSkillGapPath(basePath)
   const requiredSkills = job?.requiredSkills || []
@@ -48,12 +59,18 @@ function JobSkillMatchPanel({ job, skills, skillsLoading, skillsError, onRetrySk
     : canCompute
       ? compareJobSkillOverlap(requiredSkills, skills)
       : null
+  const proficiencyHeader = isEmployer ? 'Candidate proficiency' : 'Your proficiency'
+  const emptyCandidateCopy = isEmployer ? JOB_SKILL_MATCH_EMPTY_EMPLOYER : JOB_SKILL_MATCH_EMPTY_CANDIDATE
 
   return (
     <Card>
-      <h2 className="po-section-title">Your Skills vs Job Requirements</h2>
+      <h2 className="po-section-title">
+        {isEmployer ? 'Recorded skills vs job requirements' : 'Your Skills vs Job Requirements'}
+      </h2>
       <p className="po-secondary mt-2">
-        PeaceOne compares your recorded My Skills list with this vacancy&apos;s required ESCO skill IDs.
+        {isEmployer
+          ? JOB_SKILL_MATCH_EMPLOYER_INTRO
+          : 'PeaceOne compares your recorded My Skills list with this vacancy\'s required ESCO skill IDs.'}
       </p>
 
       {requiredSkills.length === 0 ? (
@@ -81,14 +98,14 @@ function JobSkillMatchPanel({ job, skills, skillsLoading, skillsError, onRetrySk
               <p className="po-helper mt-2">{JOB_SKILL_MATCH_DISCLAIMER}</p>
 
               {skills.length === 0 ? (
-                <p className="po-body">{JOB_SKILL_MATCH_EMPTY_CANDIDATE}</p>
+                <p className="po-body">{emptyCandidateCopy}</p>
               ) : null}
 
               <div>
                 <h3 className="po-card-title">Matched skills</h3>
                 <div className="mt-3">
                   <SkillTable
-                    headers={['Skill', 'Your proficiency', 'Required proficiency', 'Status']}
+                    headers={['Skill', proficiencyHeader, 'Required proficiency', 'Status']}
                     emptyTitle="No matched skills yet."
                     rows={comparison.matched.map((row) => [
                       row.preferredLabel,
@@ -107,13 +124,13 @@ function JobSkillMatchPanel({ job, skills, skillsLoading, skillsError, onRetrySk
                 </p>
                 <div className="mt-3">
                   <SkillTable
-                    headers={['Skill', 'Your proficiency', 'Required proficiency', 'Difference']}
+                    headers={['Skill', proficiencyHeader, 'Required proficiency', 'Difference']}
                     emptyTitle="No proficiency gaps for this vacancy."
                     rows={comparison.proficiencyGaps.map((row) => [
                       row.preferredLabel,
                       row.candidateLevel,
                       row.requiredLevel,
-                      proficiencyGapExplanation(row.candidateLevel, row.requiredLevel),
+                      proficiencyGapExplanation(row.candidateLevel, row.requiredLevel, audience),
                     ])}
                   />
                 </div>
@@ -121,7 +138,7 @@ function JobSkillMatchPanel({ job, skills, skillsLoading, skillsError, onRetrySk
 
               <div>
                 <h3 className="po-card-title">Missing skills</h3>
-                <p className="po-helper mt-2">{missingSkillExplanation()}</p>
+                <p className="po-helper mt-2">{missingSkillExplanation(audience)}</p>
                 <div className="mt-3">
                   <SkillTable
                     headers={['Skill', 'Required proficiency', 'Status']}
@@ -135,14 +152,16 @@ function JobSkillMatchPanel({ job, skills, skillsLoading, skillsError, onRetrySk
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button to={skillsPath} variant="secondary">
-                  My Skills
-                </Button>
-                <Button to={skillGapPath} variant="secondary">
-                  Skill Gap
-                </Button>
-              </div>
+              {isEmployer ? null : (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button to={skillsPath} variant="secondary">
+                    My Skills
+                  </Button>
+                  <Button to={skillGapPath} variant="secondary">
+                    Skill Gap
+                  </Button>
+                </div>
+              )}
             </div>
           ) : null}
         </QueryStatus>

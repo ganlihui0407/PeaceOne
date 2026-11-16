@@ -162,6 +162,21 @@ export function formatJobDateTime(value) {
   return date.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+export function toPublicJobCard(job) {
+  const salary = formatSalaryRange(job)
+  return {
+    id: job.id,
+    title: job.title,
+    company: job.company?.companyName ?? '',
+    employmentType: formatEmploymentType(job.employmentType),
+    location: job.location,
+    salary: salary === 'Not specified' ? '' : salary,
+    posted: formatJobDate(job.publishedAt),
+    description: job.description,
+    skills: (job.requiredSkills ?? []).map((item) => item.skill?.preferredLabel).filter(Boolean),
+  }
+}
+
 export function formatSalaryRange(job) {
   if (!job || (job.salaryMin == null && job.salaryMax == null)) {
     return 'Not specified'
@@ -595,12 +610,28 @@ export async function closeAdminJob(id, { reason, signal } = {}) {
   return requireJobPayload(payload)
 }
 
-export async function fetchPublishedJobs({ q, location, employmentType, industry, page, limit, signal } = {}) {
+export async function fetchPublishedJobs({ q, company, location, employmentType, industry, page, limit, signal } = {}) {
   const payload = await requestJobs(
-    `/api/jobs${buildSearchParams({ q, location, employmentType, industry, page, limit })}`,
+    `/api/jobs${buildSearchParams({ q, company, location, employmentType, industry, page, limit })}`,
     { signal },
   )
   return parseJobPage(payload)
+}
+
+export function jobNarrativeSections(description) {
+  const text = typeof description === 'string' ? description.trim() : ''
+  if (!text) {
+    return { overview: '', responsibilities: '' }
+  }
+  const responsibilitiesMatch = text.match(/Responsibilities:\s*([\s\S]*?)(?:\n\s*\nQualifications:|\nQualifications:|$)/i)
+  const overview = text
+    .replace(/Responsibilities:\s*[\s\S]*?(?:\n\s*\nQualifications:|\nQualifications:|$)/i, '')
+    .replace(/Qualifications:\s*[\s\S]*$/i, '')
+    .trim()
+  return {
+    overview: overview || text,
+    responsibilities: responsibilitiesMatch ? responsibilitiesMatch[1].trim() : '',
+  }
 }
 
 export async function fetchPublishedJob(id, { signal } = {}) {

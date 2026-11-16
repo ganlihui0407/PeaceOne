@@ -134,7 +134,7 @@ function MascoOccupationDetailsView({ code }) {
   return (
     <PageContent
       title={occupation?.title || 'MASCO Occupation'}
-      description="Official MASCO 2020 occupation record. This catalogue is separate from ESCO."
+      description="Official MASCO 2020 occupation record. This catalogue is independent of ESCO and does not set Career Target, Skill Gap or course recommendations."
       breadcrumb={code || 'Unknown code'}
       actions={
         <div className="flex flex-wrap gap-2">

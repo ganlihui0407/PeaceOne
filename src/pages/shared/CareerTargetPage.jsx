@@ -257,7 +257,7 @@ function CareerTargetPage({ basePath }) {
   return (
     <PageContent
       title="Career Target"
-      description="Choose the career role you want to prepare for."
+      description="Save an official ESCO occupation. MASCO is a separate Malaysian classification catalogue and is not used for Career Target, Skill Gap or course recommendations."
     >
       <Card>
         <form
@@ -266,7 +266,7 @@ function CareerTargetPage({ basePath }) {
         >
           <SearchInput
             id="occupation-search"
-            label="Search occupations"
+            label="Search ESCO occupations"
             value={list.input}
             onChange={(event) => list.setInput(event.target.value)}
             placeholder="food service worker"
@@ -302,14 +302,14 @@ function CareerTargetPage({ basePath }) {
       </Card>
 
       <section className="mt-6">
-        <SectionHeader title="Occupation results" />
+        <SectionHeader title="ESCO occupation results" />
         <QueryStatus
           loading={list.loading}
           error={list.error}
           empty={list.items.length === 0}
           loadingLabel="Loading occupations…"
           emptyTitle="No occupations match this search yet."
-          emptyDescription="Try a different occupation name, or clear the search to browse the catalogue."
+          emptyDescription="Try a different ESCO occupation name, or clear the search to browse the ESCO catalogue."
           onRetry={list.retry}
         >
           <Table

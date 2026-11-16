@@ -107,8 +107,8 @@ test('admin company reads use the admin path only', async () => {
     assert.equal(init.method, 'GET')
     return jsonResponse(200, { company: companyPayload() })
   }
-  const company = await fetchAdminCompany(COMPANY_ID)
-  assert.equal(company.id, COMPANY_ID)
+  const result = await fetchAdminCompany(COMPANY_ID)
+  assert.equal(result.company.id, COMPANY_ID)
 })
 
 test('company forms validate required name and keep empty optional fields empty', () => {

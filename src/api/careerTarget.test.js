@@ -58,6 +58,8 @@ test('fetchCareerTarget loads a saved occupation from GET /api/me/career-target'
 test('empty career targets are valid and link to Career Target', () => {
   assert.equal(parseCareerTarget({ occupation: null }), null)
   assert.equal(CAREER_TARGET_EMPTY.title, 'No career target saved yet.')
+  assert.equal(CAREER_TARGET_EMPTY.description.includes('official ESCO occupation'), true)
+  assert.equal(CAREER_TARGET_EMPTY.description.includes('MASCO occupation codes are a separate Malaysian catalogue'), true)
   assert.equal(careerTargetPath('/student'), '/student/career-target')
   assert.equal(careerTargetPath('/jobseeker'), '/jobseeker/career-target')
 })

@@ -12,6 +12,7 @@ export function useEscoPagedSearch(fetcher, { limit = ESCO_LIST_LIMIT, extraPara
   const abortRef = useRef(null)
   const seqRef = useRef(0)
   const extraKey = JSON.stringify(extraParams ?? {})
+  const extraKeyRef = useRef(extraKey)
 
   const load = useCallback(
     async (nextQuery, nextPage) => {
@@ -63,9 +64,16 @@ export function useEscoPagedSearch(fetcher, { limit = ESCO_LIST_LIMIT, extraPara
   )
 
   useEffect(() => {
+    if (extraKeyRef.current !== extraKey) {
+      extraKeyRef.current = extraKey
+      if (page !== 1) {
+        setPage(1)
+        return
+      }
+    }
     void load(query, page)
     return () => abortRef.current?.abort()
-  }, [load, page, query])
+  }, [extraKey, load, page, query])
 
   function search(event) {
     event?.preventDefault()

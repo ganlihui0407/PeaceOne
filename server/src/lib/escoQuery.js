@@ -17,7 +17,7 @@ function singleQueryValue(value) {
   return String(value);
 }
 
-const optionalQueryString = z.preprocess(singleQueryValue, z.string().max(200).optional());
+const optionalQueryString = z.preprocess(singleQueryValue, z.string().max(500).optional());
 
 const pageQuery = z.preprocess((value) => {
   const normalized = singleQueryValue(value);
@@ -128,17 +128,58 @@ export function serializeOccupationSkill(relation) {
   };
 }
 
+export function uriSearchVariants(search) {
+  if (typeof search !== 'string' || search.length === 0) {
+    return [];
+  }
+  const variants = new Set([search]);
+  if (/^https:\/\//i.test(search)) {
+    variants.add(`http://${search.slice(search.indexOf('://') + 3)}`);
+  } else if (/^http:\/\//i.test(search)) {
+    variants.add(`https://${search.slice(search.indexOf('://') + 3)}`);
+  }
+  return [...variants];
+}
+
+export function taxonomyCatalogueSearchOr(search) {
+  const or = [
+    { preferredLabel: { contains: search, mode: 'insensitive' } },
+    {
+      sourceMetadata: {
+        path: ['altLabels'],
+        string_contains: search,
+        mode: 'insensitive',
+      },
+    },
+  ];
+  for (const variant of uriSearchVariants(search)) {
+    or.push({ sourceUri: { contains: variant, mode: 'insensitive' } });
+  }
+  if (UUID_RE.test(search)) {
+    or.push({ id: search });
+  }
+  return or;
+}
+
 export function occupationListWhere(query) {
   const where = { sourceSystem: 'ESCO' };
+  const clauses = [];
   const search = normalizeLabelSearch(query.q);
   if (search) {
-    where.preferredLabel = { contains: search, mode: 'insensitive' };
+    clauses.push({ OR: taxonomyCatalogueSearchOr(search) });
   }
   if (query.iscoGroup) {
-    where.sourceMetadata = {
-      path: ['iscoGroup'],
-      equals: query.iscoGroup,
-    };
+    clauses.push({
+      sourceMetadata: {
+        path: ['iscoGroup'],
+        equals: query.iscoGroup,
+      },
+    });
+  }
+  if (clauses.length === 1) {
+    Object.assign(where, clauses[0]);
+  } else if (clauses.length > 1) {
+    where.AND = clauses;
   }
   return where;
 }
@@ -147,7 +188,7 @@ export function skillListWhere(query) {
   const where = { sourceSystem: 'ESCO' };
   const search = normalizeLabelSearch(query.q);
   if (search) {
-    where.preferredLabel = { contains: search, mode: 'insensitive' };
+    where.OR = taxonomyCatalogueSearchOr(search);
   }
   if (query.skillType === undefined) {
     return where;

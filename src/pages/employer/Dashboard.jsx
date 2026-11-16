@@ -8,8 +8,8 @@ import { useStaffDashboard } from '../../hooks/useStaffAdminDashboard.js'
 import {
   StaffApplicationStatsSection,
   StaffCompanySection,
+  StaffJobCountsSection,
   StaffUpcomingInterviewsSection,
-  StaffJobsUnavailableSection,
   StaffProfileHighlights,
 } from '../shared/StaffAdminDashboardPanels.jsx'
 
@@ -46,7 +46,7 @@ function EmployerDashboard() {
             </Card>
 
             <StaffCompanySection company={data.company} companyTo="/employer/company" />
-            <StaffJobsUnavailableSection />
+            <StaffJobCountsSection stats={data.applicationStats} />
             <StaffApplicationStatsSection stats={data.applicationStats} />
             <StaffUpcomingInterviewsSection stats={data.interviewStats} interviews={data.upcomingInterviews} />
           </>

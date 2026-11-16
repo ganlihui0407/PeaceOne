@@ -27,6 +27,9 @@ export const LEARNING_NO_LINKED_SKILLS = {
 export const EMPTY_LEARNING_RECOMMENDATIONS = {
   occupation: null,
   recordedSkillCount: 0,
+  matchedOccupationSkillCount: 0,
+  unmatchedRecordedSkills: [],
+  coverageExplanation: '',
   totals: null,
   status: 'empty-target',
   topics: [],
@@ -83,6 +86,19 @@ function serializeTopic(item, occupation) {
   }
 }
 
+export function occupationSkillList(result) {
+  const seen = new Set()
+  const items = []
+  for (const topic of [...(result?.topics ?? []), ...(result?.recordedTopics ?? [])]) {
+    if (!topic?.id || seen.has(topic.id)) {
+      continue
+    }
+    seen.add(topic.id)
+    items.push(topic)
+  }
+  return items.sort(compareRecommendationItems)
+}
+
 export function buildLearningRecommendations(gap) {
   const occupation = gap.occupation
   const topics = gap.items
@@ -106,6 +122,9 @@ export function buildLearningRecommendations(gap) {
   return {
     occupation,
     recordedSkillCount: gap.recordedSkillCount,
+    matchedOccupationSkillCount: gap.matchedOccupationSkillCount ?? gap.items.filter((item) => item.recorded).length,
+    unmatchedRecordedSkills: gap.unmatchedRecordedSkills ?? [],
+    coverageExplanation: gap.coverageExplanation ?? '',
     totals: gap.totals,
     status,
     topics,

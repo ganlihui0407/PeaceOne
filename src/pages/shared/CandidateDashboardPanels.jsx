@@ -147,6 +147,13 @@ export function SkillGapOverviewCard({ data, basePath }) {
         </Button>
       </div>
       <p className="po-helper mt-4">{SKILL_GAP_DISCLAIMER}</p>
+      {data.coverageExplanation ? <p className="po-secondary mt-3">{data.coverageExplanation}</p> : null}
+      {data.unmatchedRecordedLabels?.length > 0 ? (
+        <div className="mt-4">
+          <p className="po-helper mb-2">Recorded but not on this occupation list</p>
+          <SkillLabelList labels={data.unmatchedRecordedLabels} status="unlinked" />
+        </div>
+      ) : null}
       {data.recordedSkillCount === 0 ? (
         <p className="po-secondary mt-3">{LEARNING_NO_RECORDED.description}</p>
       ) : null}

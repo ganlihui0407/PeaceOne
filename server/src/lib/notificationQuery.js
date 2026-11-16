@@ -9,6 +9,8 @@ export const NOTIFICATION_TYPES = [
   'APPLICATION_SUBMITTED',
   'APPLICATION_SHORTLISTED',
   'APPLICATION_REJECTED',
+  'APPLICATION_OFFERED',
+  'LEARNING_COURSE_COMPLETED',
   'INTERVIEW_INVITED',
   'INTERVIEW_ACCEPTED',
   'INTERVIEW_RESCHEDULE_REQUESTED',
@@ -17,7 +19,7 @@ export const NOTIFICATION_TYPES = [
   'INTERVIEW_COMPLETED',
 ];
 
-export const NOTIFICATION_RELATED_ENTITY_TYPES = ['APPLICATION', 'INTERVIEW'];
+export const NOTIFICATION_RELATED_ENTITY_TYPES = ['APPLICATION', 'INTERVIEW', 'LEARNING_CONTENT'];
 
 export class NotificationError extends Error {
   constructor(status, message) {
@@ -93,6 +95,16 @@ function copyFor(type, audience, ctx) {
       return {
         title: 'Application update',
         message: `Your application for ${jobTitle} at ${companyName} was not selected.`,
+      };
+    case 'APPLICATION_OFFERED':
+      return {
+        title: 'Job offer recorded',
+        message: `An offer was recorded for ${jobTitle} at ${companyName}.`,
+      };
+    case 'LEARNING_COURSE_COMPLETED':
+      return {
+        title: 'Course completed',
+        message: `You completed ${displayLabel(ctx.courseTitle, 'a course')}. Recorded skills were updated from this demonstration course.`,
       };
     case 'INTERVIEW_INVITED':
       return {
@@ -260,7 +272,9 @@ export async function notifyApplicationEvent(tx, {
       ? 'APPLICATION_SHORTLISTED'
       : event.toStatus === 'REJECTED'
         ? 'APPLICATION_REJECTED'
-        : null;
+        : event.toStatus === 'OFFERED'
+          ? 'APPLICATION_OFFERED'
+          : null;
   if (!type) {
     return 0;
   }
@@ -434,6 +448,38 @@ export async function markAllOwnedNotificationsRead(client, userId) {
     data: { readAt: new Date() },
   });
   return { updatedCount: result.count };
+}
+
+export async function notifyLearningCourseCompleted(tx, {
+  enrollmentId,
+  userId,
+  contentId,
+}) {
+  const course = await tx.learningContent.findUnique({
+    where: { id: contentId },
+    select: { id: true, title: true },
+  });
+  if (!course) {
+    return 0;
+  }
+  const eligibleIds = await filterEligibleRecipientIds(tx, [userId]);
+  if (!eligibleIds.includes(userId)) {
+    return 0;
+  }
+  const row = notificationRow({
+    type: 'LEARNING_COURSE_COMPLETED',
+    audience: 'candidate',
+    recipientUserId: userId,
+    actorUserId: userId,
+    sourceEventId: enrollmentId,
+    relatedEntityType: 'LEARNING_CONTENT',
+    relatedEntityId: course.id,
+    ctx: { courseTitle: course.title },
+  });
+  if (!row) {
+    return 0;
+  }
+  return writeNotifications(tx, [row]);
 }
 
 export async function deleteNotificationsForApplication(client, applicationId) {

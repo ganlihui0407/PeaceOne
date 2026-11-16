@@ -130,6 +130,13 @@ employerApplicationsRouter.post(
   handleTransition('reject'),
 );
 
+employerApplicationsRouter.post(
+  '/:id/offer',
+  validateParams(applicationIdParamsSchema),
+  validateBody(employerApplicationActionBodySchema),
+  handleTransition('offer'),
+);
+
 employerApplicationsRouter.get(
   '/:id',
   validateParams(applicationIdParamsSchema),

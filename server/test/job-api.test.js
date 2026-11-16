@@ -691,9 +691,10 @@ test('students and job seekers cannot create jobs', async () => {
   assert.equal(seekerCreate.response.status, 403);
 });
 
-test('unauthenticated job access returns 401', async () => {
+test('unauthenticated visitors can browse published jobs but cannot apply or manage them', async () => {
   const listed = await requestJson(baseUrl, '/api/jobs');
-  assert.equal(listed.response.status, 401);
+  assert.equal(listed.response.status, 200, listed.text);
+  assert.ok(Array.isArray(listed.json.jobs));
   const meListed = await requestJson(baseUrl, '/api/me/jobs');
   assert.equal(meListed.response.status, 401);
   const adminListed = await requestJson(baseUrl, '/api/admin/jobs');
@@ -701,6 +702,12 @@ test('unauthenticated job access returns 401', async () => {
   const primed = await primeCsrf(baseUrl);
   const created = await postJson(baseUrl, '/api/me/jobs', primed, validJob());
   assert.equal(created.response.status, 401);
+  if (listed.json.jobs[0]) {
+    const apply = await postJson(baseUrl, `/api/jobs/${listed.json.jobs[0].id}/applications`, primed, {
+      resumeId: listed.json.jobs[0].id,
+    });
+    assert.equal(apply.response.status, 401);
+  }
 });
 
 test('admin can list jobs, inspect history, suspend and close', async () => {
@@ -800,7 +807,22 @@ test('candidates see published jobs only and never private company fields', asyn
   }
 
   const staffAsCandidate = await listCandidateJobs(sessionOf(staff));
-  assert.equal(staffAsCandidate.response.status, 403);
+  assert.equal(staffAsCandidate.response.status, 200, staffAsCandidate.text);
+  const publicIds = staffAsCandidate.json.jobs.map((job) => job.id);
+  assert.equal(publicIds.includes(published.json.job.id), true);
+  assert.equal(publicIds.includes(draft.json.job.id), false);
+  assert.equal(publicIds.includes(closed.json.job.id), false);
+
+  const anonymous = await requestJson(baseUrl, '/api/jobs?q=Visible');
+  assert.equal(anonymous.response.status, 200, anonymous.text);
+  assert.equal(anonymous.json.jobs.some((job) => job.id === published.json.job.id), true);
+  assert.equal(anonymous.json.jobs.some((job) => job.id === draft.json.job.id), false);
+  const byCompany = await requestJson(baseUrl, '/api/jobs?company=Nexa');
+  assert.equal(byCompany.response.status, 200, byCompany.text);
+  assert.equal(byCompany.json.jobs.some((job) => job.id === published.json.job.id), true);
+  const missingCompany = await requestJson(baseUrl, '/api/jobs?company=NotARealEmployer');
+  assert.equal(missingCompany.json.jobs.some((job) => job.id === published.json.job.id), false);
+  assert.equal((await requestJson(baseUrl, `/api/jobs/${draft.json.job.id}`)).response.status, 404);
 });
 
 test('concurrent publication allows a single PUBLISHED transition', async () => {

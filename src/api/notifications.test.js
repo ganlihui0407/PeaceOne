@@ -76,6 +76,8 @@ function pagePayload(items = [notificationPayload()], overrides = {}) {
 
 test('parseNotification keeps public fields and drops private extras', () => {
   const parsed = parseNotification(notificationPayload())
+  const offered = parseNotification(notificationPayload({ type: 'APPLICATION_OFFERED' }))
+  assert.equal(offered.type, 'APPLICATION_OFFERED')
   assert.equal(parsed.id, NOTIFICATION_ID)
   assert.equal(parsed.relatedEntityType, 'APPLICATION')
   assert.equal(parsed.relatedEntityId, APPLICATION_ID)
@@ -110,6 +112,13 @@ test('role-specific destinations use application and interview pages', () => {
   assert.equal(notificationDestination('STUDENT', interview), `/student/interviews/${INTERVIEW_ID}`)
   assert.equal(notificationDestination('JOB_SEEKER', interview), `/jobseeker/interviews/${INTERVIEW_ID}`)
   assert.equal(notificationDestination('COMPANY_STAFF', interview), `/employer/interviews/${INTERVIEW_ID}`)
+  const learning = notificationPayload({
+    type: 'LEARNING_COURSE_COMPLETED',
+    relatedEntityType: 'LEARNING_CONTENT',
+    relatedEntityId: APPLICATION_ID,
+  })
+  assert.equal(notificationDestination('STUDENT', learning), `/student/learning/${APPLICATION_ID}`)
+  assert.equal(notificationDestination('JOB_SEEKER', learning), `/jobseeker/learning/${APPLICATION_ID}`)
   assert.equal(notificationDestination('ADMIN', application), null)
   assert.equal(notificationsCentrePath('ADMIN'), '/admin/notifications')
 })
@@ -280,6 +289,9 @@ test('notification UI is live, reusable across roles, and has no mock fallback',
   assert.equal(page.includes('data/notifications'), false)
   assert.equal(list.includes('Unread'), true)
   assert.equal(header.includes('NotificationBell'), true)
+  assert.equal(header.includes('placeholder="Search"'), false)
+  assert.equal(header.includes('type="search"'), false)
+  assert.equal(header.includes('showSearch'), false)
   assert.equal(app.includes('data/notifications'), false)
   assert.equal(app.includes('studentNotifications'), false)
   assert.equal(app.includes('jobSeekerNotifications'), false)

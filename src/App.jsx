@@ -7,6 +7,7 @@ import Home from './pages/public/Home.jsx'
 import Jobs from './pages/public/Jobs.jsx'
 import JobDetail from './pages/public/JobDetail.jsx'
 import Learning from './pages/public/Learning.jsx'
+import CourseDetail from './pages/public/CourseDetail.jsx'
 import About from './pages/public/About.jsx'
 import Login from './pages/public/Login.jsx'
 import Register from './pages/public/Register.jsx'
@@ -26,6 +27,8 @@ import EmployerInterviewDetails from './pages/employer/InterviewDetails.jsx'
 import AdminDashboard from './pages/admin/Dashboard.jsx'
 import AdminUsers from './pages/admin/Users.jsx'
 import AdminUserDetails from './pages/admin/UserDetails.jsx'
+import AdminCompanies from './pages/admin/Companies.jsx'
+import AdminCompanyDetails from './pages/admin/CompanyDetails.jsx'
 import AdminJobMonitoring from './pages/admin/JobMonitoring.jsx'
 import AdminJobModeration from './pages/admin/JobModeration.jsx'
 import AdminLearningManagement from './pages/admin/LearningManagement.jsx'
@@ -47,6 +50,8 @@ import CareerTargetPage from './pages/shared/CareerTargetPage.jsx'
 import SkillGapPage from './pages/shared/SkillGapPage.jsx'
 import LearningRecommendationsPage from './pages/shared/LearningRecommendationsPage.jsx'
 import LearningDetailPage from './pages/shared/LearningDetailPage.jsx'
+import LearningLessonPage from './pages/shared/LearningLessonPage.jsx'
+import LearningAssessmentPage from './pages/shared/LearningAssessmentPage.jsx'
 import LearningProgressPage from './pages/shared/LearningProgressPage.jsx'
 import CandidateJobsPage from './pages/shared/CandidateJobsPage.jsx'
 import CandidateJobDetailPage from './pages/shared/CandidateJobDetailPage.jsx'
@@ -70,6 +75,7 @@ function App() {
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/jobs/:id" element={<JobDetail />} />
           <Route path="/learning" element={<Learning />} />
+          <Route path="/learning/:contentId" element={<CourseDetail />} />
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -93,6 +99,8 @@ function App() {
           <Route path="skill-gap" element={<SkillGapPage basePath="/student" />} />
           <Route path="learning" element={<LearningRecommendationsPage basePath="/student" />} />
           <Route path="learning/progress" element={<LearningProgressPage basePath="/student" />} />
+          <Route path="learning/:contentId/lessons/:lessonId" element={<LearningLessonPage basePath="/student" />} />
+          <Route path="learning/:contentId/assessments/:assessmentId" element={<LearningAssessmentPage basePath="/student" />} />
           <Route path="learning/:contentId" element={<LearningDetailPage basePath="/student" />} />
           <Route path="jobs" element={<CandidateJobsPage basePath="/student" variant="student" />} />
           <Route path="jobs/:jobId" element={<CandidateJobDetailPage basePath="/student" variant="student" />} />
@@ -129,6 +137,8 @@ function App() {
           <Route path="interviews/:interviewId" element={<InterviewDetailsPage basePath="/jobseeker" />} />
           <Route path="learning" element={<LearningRecommendationsPage basePath="/jobseeker" />} />
           <Route path="learning/progress" element={<LearningProgressPage basePath="/jobseeker" />} />
+          <Route path="learning/:contentId/lessons/:lessonId" element={<LearningLessonPage basePath="/jobseeker" />} />
+          <Route path="learning/:contentId/assessments/:assessmentId" element={<LearningAssessmentPage basePath="/jobseeker" />} />
           <Route path="learning/:contentId" element={<LearningDetailPage basePath="/jobseeker" />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
@@ -169,6 +179,8 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:userId" element={<AdminUserDetails />} />
+          <Route path="companies" element={<AdminCompanies />} />
+          <Route path="companies/:companyId" element={<AdminCompanyDetails />} />
           <Route path="position-requests" element={<AdminPositionChangeRequests />} />
           <Route path="position-requests/:requestId" element={<AdminPositionChangeRequestDetails />} />
           <Route path="jobs" element={<AdminJobMonitoring />} />

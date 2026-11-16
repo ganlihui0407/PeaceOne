@@ -382,6 +382,10 @@ test('candidate application pages wire Apply Now, My Applications and role prote
   assert.equal(detail.includes('Confirm withdrawal'), true)
   assert.equal(detail.includes('Status history'), true)
   assert.equal(detail.includes('APPLICATION_WITHDRAWN_COPY'), true)
+  assert.equal(detail.includes('APPLICATION_OFFERED_COPY'), true)
+  assert.equal(detail.includes('fetchMyInterviews'), true)
+  assert.equal(detail.includes('Related notifications'), true)
+  assert.equal(detail.includes('reviewNote'), false)
   assert.equal(detail.includes('canWithdrawApplication'), true)
   assert.equal(detail.includes('/api/employer/applications'), false)
 

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../auth/useAuth.js'
+import { dashboardForRole } from '../../auth/rolePaths.js'
 import BrandMark from '../common/BrandMark.jsx'
 
 const exploreLinks = [
@@ -8,12 +10,20 @@ const exploreLinks = [
   { label: 'About', to: '/about' },
 ]
 
-const accountLinks = [
-  { label: 'Login', to: '/login' },
-  { label: 'Register', to: '/register' },
-]
-
 function Footer() {
+  const { user, ready } = useAuth()
+  const workspacePath = user ? dashboardForRole(user.role) : null
+  const accountLinks = !ready
+    ? []
+    : user
+      ? [
+          { label: 'Workspace', to: workspacePath },
+        ]
+      : [
+          { label: 'Login', to: '/login' },
+          { label: 'Register', to: '/register' },
+        ]
+
   return (
     <footer className="border-t border-line bg-surface">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">

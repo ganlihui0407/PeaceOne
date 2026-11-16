@@ -57,7 +57,7 @@ function EscoJobSkillPicker({ skills, error, disabled, onChange }) {
             id="job-skill-search"
             label="Search ESCO skills"
             value={catalogue.input}
-            placeholder="SQL, communication, Python"
+            placeholder="SQL, Python, or an ESCO skill URI"
             disabled={disabled}
             onChange={(event) => catalogue.setInput(event.target.value)}
             onKeyDown={(event) => {

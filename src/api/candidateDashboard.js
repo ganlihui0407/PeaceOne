@@ -34,9 +34,9 @@ export { DASHBOARD_INTERVIEWS_EMPTY as DASHBOARD_INTERVIEWS_UNAVAILABLE } from '
 export { DASHBOARD_INTERVIEWS_EMPTY } from './interviews.js'
 
 export const DASHBOARD_LEARNING_PROGRESS = {
-  title: 'Course completion is not tracked yet.',
+  title: 'Course completion is listed on Learning Progress.',
   description:
-    'Skill-development topics come from your saved career target and recorded ESCO skills. PeaceOne does not record course percentages or completed modules.',
+    'Skill-development topics come from your saved career target and recorded ESCO skills. Enrolments, lesson completion and assessments are stored on Learning Progress.',
 }
 
 export const DASHBOARD_PROFILE_INCOMPLETE = {
@@ -96,6 +96,7 @@ export function buildCandidateDashboard({ profile, skills, recommendations }) {
   const notRecordedForTarget = totals ? totals.essential.notRecorded + totals.optional.notRecorded : null
   const recordedTopics = recommendations.recordedTopics ?? []
   const topics = recommendations.topics ?? []
+  const unmatchedRecordedSkills = recommendations.unmatchedRecordedSkills ?? []
 
   return {
     fullName: profile.fullName,
@@ -108,6 +109,8 @@ export function buildCandidateDashboard({ profile, skills, recommendations }) {
     recordedForTarget,
     notRecordedForTarget,
     linkedSkillCount: totals?.relations ?? null,
+    coverageExplanation: recommendations.coverageExplanation ?? '',
+    unmatchedRecordedLabels: unmatchedRecordedSkills.map((item) => item.skill.preferredLabel),
     recordedLabels: recordedTopics.map((topic) => topic.skill.preferredLabel),
     notRecordedLabels: topics.map((topic) => topic.skill.preferredLabel),
     topics: topics.slice(0, DASHBOARD_TOPIC_PREVIEW),
@@ -116,7 +119,7 @@ export function buildCandidateDashboard({ profile, skills, recommendations }) {
       { label: 'Recorded skills', value: String(skills.length) },
       { label: 'Career target', value: occupation ? 'Set' : 'Not set' },
       {
-        label: 'Recorded for target',
+        label: 'Occupation-linked',
         value: occupation && totals ? `${recordedForTarget} of ${totals.relations}` : '—',
       },
       {

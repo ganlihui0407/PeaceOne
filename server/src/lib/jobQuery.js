@@ -212,6 +212,7 @@ export const adminJobListQuerySchema = z.object({
 
 export const candidateJobListQuerySchema = z.object({
   q: optionalQueryString,
+  company: optionalQueryString,
   location: optionalQueryString,
   employmentType: z.preprocess(singleQueryValue, z.enum(EMPLOYMENT_TYPE_ENUM).optional()),
   industry: optionalQueryString,
@@ -385,10 +386,12 @@ export function candidateJobListWhere(query, now = new Date()) {
   }
 
   const industry = normalizeLabelSearch(query.industry);
-  if (industry) {
+  const companyName = normalizeLabelSearch(query.company);
+  if (industry || companyName) {
     where.company = {
       ...(where.company ?? {}),
-      industry: { contains: industry, mode: 'insensitive' },
+      ...(companyName ? { companyName: { contains: companyName, mode: 'insensitive' } } : {}),
+      ...(industry ? { industry: { contains: industry, mode: 'insensitive' } } : {}),
     };
   }
 

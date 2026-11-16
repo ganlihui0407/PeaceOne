@@ -6,7 +6,7 @@ export const CAREER_TARGET_UNAVAILABLE = 'Career target data is unavailable righ
 export const CAREER_TARGET_EMPTY = {
   title: 'No career target saved yet.',
   description:
-    'Choose an official ESCO occupation on the Career Target page and save it. Skill Gap can still compare a temporary selection without changing that saved target.',
+    'Choose an official ESCO occupation on the Career Target page and save it. MASCO occupation codes are a separate Malaysian catalogue and are not used for Career Target, Skill Gap or course recommendations. Skill Gap can still compare a temporary ESCO selection without changing that saved target.',
 }
 
 const UUID_RE =

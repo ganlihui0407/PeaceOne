@@ -335,7 +335,7 @@ function SkillsPage({ basePath }) {
       <Card className="mt-8">
         <SectionHeader
           title="ESCO skill catalogue"
-          description="Search official skill records and add a selected skill to your saved list."
+          description="Search official ESCO skills by preferred label, alternative label, source URI or identifier fragment."
         />
         <form className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]" onSubmit={catalogue.search}>
           <SearchInput
@@ -343,11 +343,20 @@ function SkillsPage({ basePath }) {
             label="Search skills"
             value={catalogue.input}
             onChange={(event) => catalogue.setInput(event.target.value)}
-            placeholder="ICT safety"
+            placeholder="ICT safety, Python, or an ESCO skill URI"
           />
-          <div className="flex items-end">
+          <div className="flex flex-wrap items-end gap-2">
             <Button type="submit" className="w-full md:w-auto" disabled={catalogue.loading}>
               Search
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full md:w-auto"
+              disabled={catalogue.loading}
+              onClick={catalogue.resetSearch}
+            >
+              Clear search
             </Button>
           </div>
         </form>

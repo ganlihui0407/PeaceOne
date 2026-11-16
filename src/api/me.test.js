@@ -161,6 +161,10 @@ test('parsers reject invalid payloads and ignore extra sensitive fields', () => 
   assert.equal(parsed.educationLevel, null)
   assert.equal(parsed.graduationYear, null)
   assert.equal(parseMeProfile({ user: profilePayload({ phone: null }) }).phone, null)
+  assert.equal(
+    parseMeProfile({ user: profilePayload({ educationLevel: 'Bachelor' }) }).educationLevel,
+    "Bachelor's Degree",
+  )
   assert.throws(
     () => parseMeProfile({ user: profilePayload({ educationLevel: 'PhD' }) }),
     (error) => error instanceof ApiError,

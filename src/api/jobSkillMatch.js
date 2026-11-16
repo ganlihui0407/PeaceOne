@@ -15,6 +15,12 @@ export const JOB_SKILL_MATCH_DISCLAIMER =
 export const JOB_SKILL_MATCH_EMPTY_CANDIDATE =
   'No ESCO skills are recorded in My Skills yet. PeaceOne compares only confirmed UserSkill records and does not infer skills from a resume.'
 
+export const JOB_SKILL_MATCH_EMPTY_EMPLOYER =
+  'This candidate has no recorded UserSkill entries yet. PeaceOne compares only confirmed UserSkill records and does not infer skills from a resume.'
+
+export const JOB_SKILL_MATCH_EMPLOYER_INTRO =
+  'PeaceOne compares the candidate’s current recorded UserSkill list with this vacancy’s required ESCO skill IDs. Job postings store required skills only; there is no optional-skill field.'
+
 const PROFICIENCY_RANK = {
   Beginner: 1,
   Intermediate: 2,
@@ -103,11 +109,17 @@ export function matchStatusTone(status) {
   return 'default'
 }
 
-export function proficiencyGapExplanation(candidateLevel, requiredLevel) {
+export function proficiencyGapExplanation(candidateLevel, requiredLevel, audience = 'candidate') {
+  if (audience === 'employer') {
+    return `The candidate’s recorded proficiency is ${candidateLevel}. This vacancy requires ${requiredLevel}. PeaceOne does not change recorded levels.`
+  }
   return `Your recorded proficiency is ${candidateLevel}. This vacancy requires ${requiredLevel}. PeaceOne does not change your recorded level.`
 }
 
-export function missingSkillExplanation() {
+export function missingSkillExplanation(audience = 'candidate') {
+  if (audience === 'employer') {
+    return 'This skill has not been recorded on the candidate’s UserSkill list. PeaceOne does not infer it from a resume.'
+  }
   return 'This skill has not been recorded in My Skills. PeaceOne does not infer it from a resume.'
 }
 
@@ -127,6 +139,8 @@ export function candidateSkillGapPath(basePath) {
 }
 
 export function compareJobSkillOverlap(requiredSkills, candidateSkills) {
+  // Vacancy overlap uses JobSkill ESCO IDs and the same UserSkill profile as skill gap.
+  // It does not use OccupationSkillRelation. The overlap percent formula is unchanged.
   const uniqueRequired = uniqueRequiredSkills(requiredSkills)
   if (uniqueRequired.length === 0) {
     return {

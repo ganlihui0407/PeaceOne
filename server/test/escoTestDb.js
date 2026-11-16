@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import pg from 'pg';
 import { config } from '../src/config.js';
 import { createPrismaClient } from '../src/db.js';
+import { assertSafeDestructiveTestOperation } from '../src/lib/testDatabaseGuard.js';
 
 const execFileAsync = promisify(execFile);
 export const ESCO_TEST_DB_NAME = 'peaceone_esco_import_test';
@@ -62,6 +63,7 @@ export async function assertCurrentDatabase(prisma, expectedName) {
 }
 
 export async function resetIsolatedEscoTestData(prisma) {
+  await assertSafeDestructiveTestOperation(prisma);
   await prisma.userSkill.deleteMany();
   await prisma.occupationSkillRelation.deleteMany();
   await prisma.skill.deleteMany();

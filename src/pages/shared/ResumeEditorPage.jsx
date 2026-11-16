@@ -628,7 +628,7 @@ function ResumeEditorPage({ basePath }) {
                     label="Search skills"
                     value={catalogue.input}
                     onChange={(event) => catalogue.setInput(event.target.value)}
-                    placeholder="ICT safety"
+                    placeholder="ICT safety, Python, or an ESCO skill URI"
                   />
                   <div className="flex items-end">
                     <Button type="submit" className="w-full md:w-auto" disabled={catalogue.loading}>

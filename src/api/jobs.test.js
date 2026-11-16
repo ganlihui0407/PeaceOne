@@ -28,6 +28,8 @@ import {
   fetchAdminJobs,
   fetchPublishedJob,
   fetchPublishedJobs,
+  jobNarrativeSections,
+  toPublicJobCard,
   fetchStaffJobs,
   formatJobStatus,
   formatSalaryRange,
@@ -199,6 +201,42 @@ test('fetchPublishedJobs sends search, location, employment type, industry and p
   assert.equal(result.page, 2)
   assert.equal(result.totalPages, 2)
   assert.equal(calls[0].method, 'GET')
+})
+
+test('jobNarrativeSections splits demonstration responsibilities from the stored description', () => {
+  const sections = jobNarrativeSections(
+    'Overview text.\n\nResponsibilities: Clean tables and write SQL.\n\nQualifications: Diploma.',
+  )
+  assert.equal(sections.overview.includes('Overview text'), true)
+  assert.equal(sections.responsibilities.includes('Clean tables'), true)
+  assert.equal(sections.overview.includes('Responsibilities:'), false)
+})
+
+test('toPublicJobCard maps API jobs for public cards without mock companies', () => {
+  const card = toPublicJobCard(parseJob(candidateJobPayload()))
+  assert.equal(card.company, 'Northwind Analytics')
+  assert.equal(card.employmentType, 'Full-time')
+  assert.equal(card.skills.includes('use ICT safety measures'), true)
+  assert.equal(card.salary.includes('3800') || card.salary.includes('3,800'), true)
+})
+
+test('public job pages do not import static job fixtures', () => {
+  const files = [
+    '../pages/public/Jobs.jsx',
+    '../pages/public/JobDetail.jsx',
+    '../pages/public/sections/FeaturedJobsSection.jsx',
+  ]
+  for (const relative of files) {
+    const source = readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8')
+    assert.equal(source.includes("from '../../data/jobs.js'"), false, relative)
+    assert.equal(source.includes("from '../../../data/jobs.js'"), false, relative)
+    assert.equal(source.includes('Nexora Tech'), false, relative)
+    assert.equal(source.includes('fetchPublishedJob') || source.includes('fetchPublishedJobs'), true, relative)
+  }
+  const publicList = readFileSync(fileURLToPath(new URL('../pages/public/Jobs.jsx', import.meta.url)), 'utf8')
+  assert.equal(publicList.includes('Clear filters'), true)
+  assert.equal(publicList.includes('job-company'), true)
+  assert.equal(publicList.includes('employmentType'), true)
 })
 
 test('fetchPublishedJobs treats an empty published list as valid', async () => {

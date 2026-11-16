@@ -9,6 +9,7 @@ import Card from '../../components/cards/Card.jsx'
 import PageContent from '../../components/layout/PageContent.jsx'
 import DetailItem from '../../components/ui/DetailItem.jsx'
 import {
+  APPLICATION_OFFERED_COPY,
   APPLICATION_SNAPSHOT_COPY,
   APPLICATION_WITHDRAWN_COPY,
   applicationStatusTone,
@@ -24,7 +25,15 @@ import {
   userFacingApplicationError,
   withdrawMyApplication,
 } from '../../api/applications.js'
-import { candidateJobPath } from '../../api/jobs.js'
+import {
+  candidateInterviewPath,
+  fetchMyInterviews,
+  formatInterviewStatus,
+  formatInterviewWhen,
+  interviewStatusTone,
+} from '../../api/interviews.js'
+import { candidateJobPath, formatSalaryRange } from '../../api/jobs.js'
+import { fetchNotifications, formatNotificationTime } from '../../api/notifications.js'
 
 function ApplicationDetailPage({ basePath }) {
   const { applicationId } = useParams()
@@ -35,6 +44,8 @@ function ApplicationDetailView({ basePath, applicationId }) {
   const validId = isApplicationId(applicationId)
   const listPath = candidateApplicationsPath(basePath)
   const [application, setApplication] = useState(null)
+  const [interviews, setInterviews] = useState([])
+  const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(validId)
   const [error, setError] = useState('')
   const [notFound, setNotFound] = useState(!validId)
@@ -51,10 +62,24 @@ function ApplicationDetailView({ basePath, applicationId }) {
     setLoading(true)
     setError('')
     setNotFound(false)
-    fetchMyApplication(applicationId, { signal: controller.signal })
-      .then((next) => {
+    Promise.all([
+      fetchMyApplication(applicationId, { signal: controller.signal }),
+      fetchMyInterviews({ applicationId, page: 1, limit: 20, signal: controller.signal }),
+      fetchNotifications({ page: 1, limit: 50, signal: controller.signal }).catch((notificationError) => {
+        if (isAbortError(notificationError) || controller.signal.aborted) {
+          throw notificationError
+        }
+        return { items: [] }
+      }),
+    ])
+      .then(([next, interviewPage, notificationPage]) => {
         if (!controller.signal.aborted) {
           setApplication(next)
+          setInterviews(interviewPage.items)
+          const relatedIds = new Set([next.id, ...interviewPage.items.map((item) => item.id)])
+          setNotifications(
+            notificationPage.items.filter((item) => relatedIds.has(item.relatedEntityId)),
+          )
         }
       })
       .catch((loadError) => {
@@ -62,6 +87,8 @@ function ApplicationDetailView({ basePath, applicationId }) {
           return
         }
         setApplication(null)
+        setInterviews([])
+        setNotifications([])
         if (loadError.status === 404) {
           setNotFound(true)
           return
@@ -158,9 +185,21 @@ function ApplicationDetailView({ basePath, applicationId }) {
                 <dl className="mt-6 grid gap-4 sm:grid-cols-2">
                   <DetailItem label="Location" value={job?.location || '—'} />
                   <DetailItem label="Employment type" value={job ? formatEmploymentType(job.employmentType) : '—'} />
+                  <DetailItem label="Salary" value={job ? formatSalaryRange(job) : '—'} />
                   <DetailItem label="Submitted" value={formatJobDateTime(application.appliedAt)} />
                   <DetailItem label="Current status" value={formatApplicationStatus(application.status)} />
+                  <DetailItem
+                    label="Employer review"
+                    value={
+                      application.status === 'SUBMITTED'
+                        ? 'Waiting for employer review'
+                        : formatApplicationStatus(application.status)
+                    }
+                  />
                 </dl>
+                {job?.company?.description ? (
+                  <p className="po-secondary mt-4">{job.company.description}</p>
+                ) : null}
                 {job ? (
                   <div className="mt-5">
                     <Link to={candidateJobPath(basePath, job.id)} className="text-sm font-medium text-primary">
@@ -208,6 +247,51 @@ function ApplicationDetailView({ basePath, applicationId }) {
                   />
                 </div>
               </Card>
+
+              <Card>
+                <h2 className="po-section-title">Interviews</h2>
+                <div className="mt-5">
+                  <Table
+                    minWidthClass="min-w-[640px]"
+                    headers={['Title', 'When', 'Status', 'Meeting link', 'Actions']}
+                    rows={interviews.map((item) => [
+                      item.title,
+                      formatInterviewWhen(item),
+                      <Badge key={`${item.id}-status`} tone={interviewStatusTone(item.status)} className="normal-case">
+                        {formatInterviewStatus(item.status)}
+                      </Badge>,
+                      item.meetingLink ? (
+                        <a key={`${item.id}-link`} href={item.meetingLink} className="text-sm font-medium text-primary">
+                          Open meeting link
+                        </a>
+                      ) : (
+                        '—'
+                      ),
+                      <Button
+                        key={`${item.id}-view`}
+                        size="sm"
+                        variant="secondary"
+                        to={candidateInterviewPath(basePath, item.id)}
+                      >
+                        View interview
+                      </Button>,
+                    ])}
+                    emptyTitle="No interviews have been recorded for this application."
+                  />
+                </div>
+              </Card>
+
+              <Card>
+                <h2 className="po-section-title">Related notifications</h2>
+                <div className="mt-5">
+                  <Table
+                    minWidthClass="min-w-[520px]"
+                    headers={['Title', 'When']}
+                    rows={notifications.map((item) => [item.title, formatNotificationTime(item.createdAt)])}
+                    emptyTitle="No related notifications are stored for this application."
+                  />
+                </div>
+              </Card>
             </div>
 
             <div className="space-y-6">
@@ -215,6 +299,8 @@ function ApplicationDetailView({ basePath, applicationId }) {
                 <h2 className="po-section-title">Actions</h2>
                 {application.status === 'WITHDRAWN' ? (
                   <p className="po-body mt-3">{APPLICATION_WITHDRAWN_COPY}</p>
+                ) : application.status === 'OFFERED' ? (
+                  <p className="po-body mt-3">{APPLICATION_OFFERED_COPY}</p>
                 ) : canWithdrawApplication(application) ? (
                   <>
                     <p className="po-secondary mt-2">

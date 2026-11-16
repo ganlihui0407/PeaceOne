@@ -10,10 +10,13 @@ import Card from '../../components/cards/Card.jsx'
 import PageContent from '../../components/layout/PageContent.jsx'
 import TextArea from '../../components/forms/TextArea.jsx'
 import DetailItem from '../../components/ui/DetailItem.jsx'
+import JobSkillMatchPanel from '../../components/jobs/JobSkillMatchPanel.jsx'
 import {
+  EMPLOYER_OFFER_COPY,
   EMPLOYER_SNAPSHOT_COPY,
   REVIEW_NOTE_MAX,
   applicationStatusTone,
+  canOfferEmployerApplication,
   canRejectEmployerApplication,
   canReviewEmployerApplication,
   canShortlistEmployerApplication,
@@ -27,6 +30,7 @@ import {
   isAbortError,
   isApplicationId,
   loadEmployerApplicationPdfBlob,
+  offerEmployerApplication,
   rejectEmployerApplication,
   reviewEmployerApplication,
   shortlistEmployerApplication,
@@ -37,6 +41,9 @@ import {
   employerInterviewCreatePath,
   employerInterviewPath,
   fetchEmployerInterviews,
+  formatInterviewStatus,
+  formatInterviewWhen,
+  interviewStatusTone,
 } from '../../api/interviews.js'
 import { staffJobPath } from '../../api/jobs.js'
 
@@ -68,6 +75,7 @@ function ApplicantDetailsView({ applicationId }) {
   const [retryNonce, setRetryNonce] = useState(0)
   const [reviewNote, setReviewNote] = useState('')
   const [rejectOpen, setRejectOpen] = useState(false)
+  const [offerOpen, setOfferOpen] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -138,6 +146,7 @@ function ApplicantDetailsView({ applicationId }) {
       const next = await action({ reviewNote })
       setApplication(next)
       setRejectOpen(false)
+      setOfferOpen(false)
       setReviewNote('')
       showToast(successMessage)
     } catch (mutateError) {
@@ -310,6 +319,12 @@ function ApplicantDetailsView({ applicationId }) {
                 </div>
               </Card>
 
+              <JobSkillMatchPanel
+                audience="employer"
+                job={job}
+                skills={applicant?.skills || []}
+              />
+
               <Card>
                 <h2 className="po-section-title">Status history</h2>
                 <div className="mt-5">
@@ -327,13 +342,39 @@ function ApplicantDetailsView({ applicationId }) {
                   />
                 </div>
               </Card>
+
+              <Card>
+                <h2 className="po-section-title">Interview records</h2>
+                <div className="mt-5">
+                  <Table
+                    minWidthClass="min-w-[640px]"
+                    headers={['Title', 'When', 'Status', 'Actions']}
+                    rows={interviews.map((item) => [
+                      item.title,
+                      formatInterviewWhen(item),
+                      <Badge key={`${item.id}-status`} tone={interviewStatusTone(item.status)} className="normal-case">
+                        {formatInterviewStatus(item.status)}
+                      </Badge>,
+                      <Button
+                        key={`${item.id}-view`}
+                        size="sm"
+                        variant="secondary"
+                        to={employerInterviewPath(item.id)}
+                      >
+                        View
+                      </Button>,
+                    ])}
+                    emptyTitle="No interviews have been recorded for this application."
+                  />
+                </div>
+              </Card>
             </div>
 
             <div className="space-y-6">
               <Card>
                 <h2 className="po-section-title">Application actions</h2>
                 <p className="po-secondary mt-2">
-                  Move this application to under review, shortlist or reject. Hiring decisions are not available yet.
+                  Move this application to under review, shortlist, reject, or record an offer after shortlisting or interview.
                 </p>
                 <div className="mt-5">
                   <TextArea
@@ -380,6 +421,14 @@ function ApplicantDetailsView({ applicationId }) {
                       Reject
                     </Button>
                   ) : null}
+                  {canOfferEmployerApplication(application) ? (
+                    <Button
+                      onClick={() => setOfferOpen(true)}
+                      disabled={busy || noteTooLong}
+                    >
+                      Issue offer
+                    </Button>
+                  ) : null}
                   {canScheduleInterviewForApplication(application, interviews) ? (
                     <Button variant="secondary" to={employerInterviewCreatePath(application.id)}>
                       Schedule interview
@@ -393,6 +442,7 @@ function ApplicantDetailsView({ applicationId }) {
                   {!canReviewEmployerApplication(application)
                     && !canShortlistEmployerApplication(application)
                     && !canRejectEmployerApplication(application)
+                    && !canOfferEmployerApplication(application)
                     && !canScheduleInterviewForApplication(application, interviews)
                     && interviews.length === 0 ? (
                       <p className="po-body">
@@ -436,6 +486,30 @@ function ApplicantDetailsView({ applicationId }) {
         <p className="po-body">
           Reject this application? The candidate cannot apply for this job again.
         </p>
+      </Modal>
+
+      <Modal
+        open={offerOpen}
+        title="Issue offer"
+        onClose={() => setOfferOpen(false)}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setOfferOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => runAction(
+                (options) => offerEmployerApplication(application.id, options),
+                'Offer recorded.',
+              )}
+              disabled={busy || noteTooLong}
+            >
+              {busy ? 'Recording offer…' : 'Confirm offer'}
+            </Button>
+          </>
+        }
+      >
+        <p className="po-body">{EMPLOYER_OFFER_COPY}</p>
       </Modal>
 
       <Modal

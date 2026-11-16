@@ -714,7 +714,8 @@ test('illegal employer transitions return 409 and interview endpoints stay unava
   const interviewRoute = await employerAction(company.staffSession, applicationId, 'interview', {});
   assert.equal(interviewRoute.response.status, 404);
   const offerRoute = await employerAction(company.staffSession, applicationId, 'offer', {});
-  assert.equal(offerRoute.response.status, 404);
+  assert.equal(offerRoute.response.status, 409);
+  assert.equal(offerRoute.json.error, APPLICATION_CANNOT_BE_UPDATED);
 });
 
 test('concurrent shortlist requests cannot both succeed', async () => {
@@ -789,6 +790,8 @@ test('employer search, stats, company isolation and applicant DTO stay company-s
   assert.equal(crossDetail.response.status, 404);
   const crossReview = await employerAction(alpha.staffSession, betaApply.json.application.id, 'review', {});
   assert.equal(crossReview.response.status, 404);
+  const crossOffer = await employerAction(alpha.staffSession, betaApply.json.application.id, 'offer', {});
+  assert.equal(crossOffer.response.status, 404);
   const unknown = await employerAction(alpha.staffSession, UNKNOWN_ID, 'reject', {});
   assert.equal(unknown.response.status, 404);
 
@@ -914,4 +917,184 @@ test('employer mutations enforce auth, CSRF, roles, extra fields and PATCH remai
     where: { email: company.staff.email },
     data: { accountStatus: 'ACTIVE' },
   });
+});
+
+function recordedSkillOverlapPercent(requiredSkills, candidateSkills) {
+  const ranks = { Beginner: 1, Intermediate: 2, Advanced: 3 };
+  const uniqueRequired = [];
+  const seen = new Set();
+  for (const item of requiredSkills || []) {
+    const skillId = item?.skill?.id;
+    if (!skillId || seen.has(skillId)) {
+      continue;
+    }
+    seen.add(skillId);
+    uniqueRequired.push(item);
+  }
+  if (uniqueRequired.length === 0) {
+    return null;
+  }
+  const byId = new Map();
+  for (const item of candidateSkills || []) {
+    const skillId = item?.skill?.id;
+    if (!skillId) {
+      continue;
+    }
+    const existing = byId.get(skillId);
+    if (!existing || ranks[item.proficiencyLevel] > ranks[existing.proficiencyLevel]) {
+      byId.set(skillId, item);
+    }
+  }
+  let matched = 0;
+  for (const required of uniqueRequired) {
+    const recorded = byId.get(required.skill.id);
+    if (recorded && ranks[recorded.proficiencyLevel] >= ranks[required.requiredLevel]) {
+      matched += 1;
+    }
+  }
+  return Math.round((matched / uniqueRequired.length) * 100);
+}
+
+test('employer can issue an offer with history, notification and invalid-transition guards', async () => {
+  const company = await seedPublishedJob('offer');
+  const candidate = await seedCandidateResume('offer-student');
+  const outsider = await seedCandidateResume('offer-outsider');
+  const created = await apply(candidate.session, company.job.id, { resumeId: candidate.resume.id });
+  const applicationId = created.json.application.id;
+
+  const tooEarly = await employerAction(company.staffSession, applicationId, 'offer', {});
+  assert.equal(tooEarly.response.status, 409);
+  assert.equal(tooEarly.json.error, APPLICATION_CANNOT_BE_UPDATED);
+
+  const candidateOffer = await employerAction(candidate.session, applicationId, 'offer', {});
+  assert.equal(candidateOffer.response.status, 403);
+  const outsiderView = await getMine(outsider.session, applicationId);
+  assert.equal(outsiderView.response.status, 404);
+
+  await employerAction(company.staffSession, applicationId, 'shortlist', {
+    reviewNote: 'Ready for an offer.',
+  });
+  const offered = await employerAction(company.staffSession, applicationId, 'offer', {
+    reviewNote: 'Issue written offer.',
+  });
+  assert.equal(offered.response.status, 200, offered.text);
+  assert.equal(offered.json.application.status, 'OFFERED');
+  const offerEvent = offered.json.application.statusEvents.find(
+    (event) => event.fromStatus === 'SHORTLISTED' && event.toStatus === 'OFFERED',
+  );
+  assert.ok(offerEvent);
+  assert.equal(offerEvent.reviewNote, 'Issue written offer.');
+  assert.equal(offerEvent.actor.fullName.length > 0, true);
+  assert.ok(offerEvent.createdAt);
+
+  const duplicate = await employerAction(company.staffSession, applicationId, 'offer', {});
+  assert.equal(duplicate.response.status, 409);
+  assert.equal(duplicate.json.error, APPLICATION_CANNOT_BE_UPDATED);
+
+  const candidateView = await getMine(candidate.session, applicationId);
+  assert.equal(candidateView.response.status, 200, candidateView.text);
+  assert.equal(candidateView.json.application.status, 'OFFERED');
+  const candidateEvent = candidateView.json.application.statusEvents.find(
+    (event) => event.toStatus === 'OFFERED',
+  );
+  assert.ok(candidateEvent);
+  assert.equal('reviewNote' in candidateEvent, false);
+  assert.equal(JSON.stringify(candidateView.json).includes('Issue written offer.'), false);
+
+  const notifications = await requestJson(baseUrl, '/api/me/notifications', {
+    cookies: candidate.session.cookies,
+  });
+  assert.equal(notifications.response.status, 200, notifications.text);
+  const offerNotice = notifications.json.notifications.find((item) => item.type === 'APPLICATION_OFFERED');
+  assert.ok(offerNotice);
+  assert.equal(offerNotice.relatedEntityType, 'APPLICATION');
+  assert.equal(offerNotice.relatedEntityId, applicationId);
+  assert.equal(offerNotice.title, 'Job offer recorded');
+
+  const interviewCompany = await seedPublishedJob('offer-interview', {
+    company: { companyName: 'Offer Interview Co', registrationNumber: '5555555-O', email: 'oi@offer.example' },
+  });
+  const interviewApply = await apply(candidate.session, interviewCompany.job.id, { resumeId: candidate.resume.id });
+  await prisma.application.update({
+    where: { id: interviewApply.json.application.id },
+    data: { status: 'INTERVIEW' },
+  });
+  const fromInterview = await employerAction(
+    interviewCompany.staffSession,
+    interviewApply.json.application.id,
+    'offer',
+    {},
+  );
+  assert.equal(fromInterview.response.status, 200, fromInterview.text);
+  assert.equal(fromInterview.json.application.status, 'OFFERED');
+
+  const withdrawnJob = await seedPublishedJob('offer-withdrawn', {
+    company: { companyName: 'Offer Withdraw Co', registrationNumber: '4444444-O', email: 'ow@offer.example' },
+  });
+  const withdrawnApply = await apply(candidate.session, withdrawnJob.job.id, { resumeId: candidate.resume.id });
+  const withdrawn = await withdrawMine(candidate.session, withdrawnApply.json.application.id);
+  assert.equal(withdrawn.response.status, 200, withdrawn.text);
+  const offerWithdrawn = await employerAction(
+    withdrawnJob.staffSession,
+    withdrawnApply.json.application.id,
+    'offer',
+    {},
+  );
+  assert.equal(offerWithdrawn.response.status, 409);
+});
+
+test('employer recorded-skill overlap uses current UserSkill records', async () => {
+  const company = await seedPublishedJob('overlap');
+  const candidate = await seedCandidateResume('overlap-student');
+  const created = await apply(candidate.session, company.job.id, { resumeId: candidate.resume.id });
+  const applicationId = created.json.application.id;
+
+  const beforeSkill = await getEmployer(company.staffSession, applicationId);
+  assert.equal(beforeSkill.response.status, 200, beforeSkill.text);
+  assert.deepEqual(beforeSkill.json.application.applicant.skills, []);
+  assert.equal(
+    recordedSkillOverlapPercent(
+      beforeSkill.json.application.job.requiredSkills,
+      beforeSkill.json.application.applicant.skills,
+    ),
+    0,
+  );
+
+  const createdSkill = await postJson(baseUrl, '/api/me/skills', candidate.session, {
+    skillId: ictSafety.id,
+    proficiencyLevel: 'Beginner',
+  });
+  assert.equal(createdSkill.response.status, 201, createdSkill.text);
+
+  const gapDetail = await getEmployer(company.staffSession, applicationId);
+  assert.equal(gapDetail.json.application.applicant.skills.length, 1);
+  assert.equal(gapDetail.json.application.applicant.skills[0].proficiencyLevel, 'Beginner');
+  assert.equal(
+    recordedSkillOverlapPercent(
+      gapDetail.json.application.job.requiredSkills,
+      gapDetail.json.application.applicant.skills,
+    ),
+    0,
+  );
+
+  const skillId = createdSkill.json.userSkill.id;
+  const updated = await requestJson(baseUrl, `/api/me/skills/${skillId}`, {
+    method: 'PATCH',
+    csrfToken: candidate.session.csrfToken,
+    cookies: candidate.session.cookies,
+    body: { proficiencyLevel: 'Intermediate' },
+  });
+  assert.equal(updated.response.status, 200, updated.text);
+
+  const matchedDetail = await getEmployer(company.staffSession, applicationId);
+  assert.equal(matchedDetail.json.application.applicant.skills[0].proficiencyLevel, 'Intermediate');
+  assert.equal(
+    recordedSkillOverlapPercent(
+      matchedDetail.json.application.job.requiredSkills,
+      matchedDetail.json.application.applicant.skills,
+    ),
+    100,
+  );
+  const list = await listEmployer(company.staffSession);
+  assert.deepEqual(list.json.applications[0].applicant.skills, []);
 });

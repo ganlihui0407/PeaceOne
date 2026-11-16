@@ -92,6 +92,8 @@ enum NotificationType {
   APPLICATION_SUBMITTED
   APPLICATION_SHORTLISTED
   APPLICATION_REJECTED
+  APPLICATION_OFFERED
+  LEARNING_COURSE_COMPLETED
   INTERVIEW_INVITED
   INTERVIEW_ACCEPTED
   INTERVIEW_RESCHEDULE_REQUESTED
@@ -103,6 +105,25 @@ enum NotificationType {
 enum NotificationRelatedEntityType {
   APPLICATION
   INTERVIEW
+  LEARNING_CONTENT
+}
+
+enum LearningContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LearningDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LearningEnrollmentStatus {
+  ENROLLED
+  IN_PROGRESS
+  COMPLETED
 }
 
 model User {
@@ -142,6 +163,9 @@ model User {
   interviewEvents           InterviewEvent[]         @relation("InterviewEventActor")
   receivedNotifications     Notification[]           @relation("NotificationRecipient")
   actedNotifications        Notification[]           @relation("NotificationActor")
+  learningEnrollments       LearningEnrollment[]
+  learningLessonProgress    LearningLessonProgress[]
+  learningAttempts          LearningAttempt[]
 
   @@index([role])
   @@index([accountStatus])
@@ -213,6 +237,7 @@ model Skill {
   userSkills          UserSkill[]
   resumeSkills        ResumeSkill[]
   jobSkills           JobSkill[]
+  learningContents    LearningContentSkill[]
 
   @@index([preferredLabel])
   @@index([skillType])
@@ -306,7 +331,7 @@ model MascoOccupationRecord {
   title          String
   recordScope    String   @map("record_scope") // V4_EXAMPLE or SUPPLEMENTAL_INDEX
   unitGroupId    String   @map("unit_group_id") @db.Uuid
-  occupationId   String?  @unique @map("occupation_id") @db.Uuid
+  occupationId   String?  @unique @map("occupation_id") @db.Uuid // Optional ESCO Occupation.id. Unused. Never populate from title similarity.
   sourceMetadata Json?    @map("source_metadata")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
@@ -677,4 +702,158 @@ model Notification {
   @@index([recipientUserId, readAt])
   @@index([relatedEntityType, relatedEntityId])
   @@map("notifications")
+}
+
+model LearningContent {
+  id                String                @id @default(uuid()) @db.Uuid
+  slug              String                @unique
+  title             String
+  description       String
+  objectives        Json
+  category          String
+  difficulty        LearningDifficulty
+  estimatedMinutes  Int                   @map("estimated_minutes")
+  thumbnailUrl      String?               @map("thumbnail_url")
+  status            LearningContentStatus @default(DRAFT)
+  publishedAt       DateTime?             @map("published_at")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  lessons      LearningLesson[]
+  skills       LearningContentSkill[]
+  enrollments  LearningEnrollment[]
+  assessments  LearningAssessment[]
+  progress     LearningLessonProgress[]
+
+  @@index([status, category])
+  @@index([category])
+  @@index([status, publishedAt])
+  @@map("learning_contents")
+}
+
+model LearningLesson {
+  id                String   @id @default(uuid()) @db.Uuid
+  contentId         String   @map("content_id") @db.Uuid
+  title             String
+  body              String
+  sortOrder         Int      @map("sort_order")
+  estimatedMinutes  Int      @map("estimated_minutes")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  content     LearningContent          @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  progress    LearningLessonProgress[]
+  assessments LearningAssessment[]
+
+  @@unique([contentId, sortOrder])
+  @@index([contentId])
+  @@map("learning_lessons")
+}
+
+model LearningContentSkill {
+  id                 String   @id @default(uuid()) @db.Uuid
+  contentId          String   @map("content_id") @db.Uuid
+  skillId            String   @map("skill_id") @db.Uuid
+  targetProficiency  String   @map("target_proficiency")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  content LearningContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  skill   Skill           @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([contentId, skillId])
+  @@index([skillId])
+  @@map("learning_content_skills")
+}
+
+model LearningEnrollment {
+  id              String                    @id @default(uuid()) @db.Uuid
+  userId          String                    @map("user_id") @db.Uuid
+  contentId       String                    @map("content_id") @db.Uuid
+  status          LearningEnrollmentStatus  @default(ENROLLED)
+  enrolledAt      DateTime                  @default(now()) @map("enrolled_at")
+  completedAt     DateTime?                 @map("completed_at")
+  skillsAwardedAt DateTime?                 @map("skills_awarded_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content  LearningContent  @relation(fields: [contentId], references: [id], onDelete: Restrict)
+  attempts LearningAttempt[]
+
+  @@unique([userId, contentId])
+  @@index([contentId, status])
+  @@index([userId, status])
+  @@map("learning_enrollments")
+}
+
+model LearningLessonProgress {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  contentId   String    @map("content_id") @db.Uuid
+  lessonId    String    @map("lesson_id") @db.Uuid
+  completedAt DateTime  @default(now()) @map("completed_at")
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content LearningContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  lesson  LearningLesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, contentId])
+  @@index([contentId])
+  @@map("learning_lesson_progress")
+}
+
+model LearningAssessment {
+  id            String   @id @default(uuid()) @db.Uuid
+  contentId     String   @map("content_id") @db.Uuid
+  lessonId      String?  @map("lesson_id") @db.Uuid
+  title         String
+  passingScore  Int      @map("passing_score")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  content   LearningContent    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  lesson    LearningLesson?    @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  questions LearningQuestion[]
+  attempts  LearningAttempt[]
+
+  @@index([contentId])
+  @@index([lessonId])
+  @@map("learning_assessments")
+}
+
+model LearningQuestion {
+  id              String   @id @default(uuid()) @db.Uuid
+  assessmentId    String   @map("assessment_id") @db.Uuid
+  prompt          String
+  options         Json
+  correctOptionId String   @map("correct_option_id")
+  sortOrder       Int      @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  assessment LearningAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, sortOrder])
+  @@index([assessmentId])
+  @@map("learning_questions")
+}
+
+model LearningAttempt {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  assessmentId  String   @map("assessment_id") @db.Uuid
+  enrollmentId  String   @map("enrollment_id") @db.Uuid
+  score         Int
+  passed        Boolean
+  answers       Json
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment  LearningAssessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
+  enrollment  LearningEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, assessmentId, createdAt])
+  @@index([enrollmentId])
+  @@index([assessmentId])
+  @@map("learning_attempts")
 }

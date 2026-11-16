@@ -16,6 +16,7 @@ import {
   formatSalaryRange,
   isAbortError,
   isJobId,
+  jobNarrativeSections,
   userFacingPublishedJobError,
 } from '../../api/jobs.js'
 import {
@@ -102,6 +103,8 @@ function CandidateJobDetailView({ basePath, jobId }) {
     )
   }
 
+  const narrative = job ? jobNarrativeSections(job.description) : { overview: '', responsibilities: '' }
+
   return (
     <PageContent
       title={job?.title || 'Job details'}
@@ -141,8 +144,15 @@ function CandidateJobDetailView({ basePath, jobId }) {
 
               <Card>
                 <h2 className="po-section-title">Job Description</h2>
-                <p className="po-body mt-4 whitespace-pre-wrap">{job.description}</p>
+                <p className="po-body mt-4 whitespace-pre-wrap">{narrative.overview}</p>
               </Card>
+
+              {narrative.responsibilities ? (
+                <Card>
+                  <h2 className="po-section-title">Responsibilities</h2>
+                  <p className="po-body mt-4 whitespace-pre-wrap">{narrative.responsibilities}</p>
+                </Card>
+              ) : null}
 
               <Card>
                 <h2 className="po-section-title">Qualifications</h2>

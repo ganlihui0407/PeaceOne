@@ -17,6 +17,7 @@ import {
 
 const TEST_EMAIL_PREFIX = 'stage56d-skillgap-';
 const ICT_SAFETY_URI = 'http://data.europa.eu/esco/skill/426ceaba-6867-481c-bb6b-aee3933da7d2';
+const SQL_URI = 'http://data.europa.eu/esco/skill/598de5b0-5b58-4ea7-8058-a4bc4d18c742';
 const CHIEF_ICT_URI = 'http://data.europa.eu/esco/occupation/276ba420-ef09-4a0e-b215-2c2e2f80ad28';
 const UNKNOWN_OCCUPATION_ID = '00000000-0000-4000-8000-000000000000';
 const createdEmails = [];
@@ -201,6 +202,8 @@ test('empty user-skill records keep occupation skills as not recorded', async ()
   assert.equal(result.json.items.length <= SKILL_GAP_RELATION_LIMIT, true);
   assert.equal(result.json.items.every((item) => item.recorded === false), true);
   assert.equal(result.json.items.every((item) => item.proficiencyLevel === null), true);
+  assert.equal(result.json.matchedOccupationSkillCount, 0);
+  assert.deepEqual(result.json.unmatchedRecordedSkills, []);
   assert.equal(
     result.json.items.every((item) => item.relationType === 'essential' || item.relationType === 'optional'),
     true,
@@ -275,4 +278,57 @@ test('students and job seekers compare recorded and unrecorded occupation skills
   assert.equal(jobView.json.recordedSkillCount, 0);
   assert.equal(jobView.json.items.some((item) => item.relationType === 'essential'), true);
   assert.equal(jobView.json.items.some((item) => item.relationType === 'optional'), true);
+});
+
+test('occupation-unlinked SQL records do not inflate occupation-linked coverage', async () => {
+  const sqlSkill = await prisma.skill.findFirst({
+    where: { sourceUri: SQL_URI, sourceSystem: 'ESCO' },
+    select: { id: true, preferredLabel: true, sourceUri: true },
+  });
+  assert.ok(sqlSkill, 'expected imported SQL skill');
+
+  const student = await registerAs('sql-unlinked');
+  const created = await postJson(baseUrl, '/api/me/skills', sessionOf(student), {
+    skillId: sqlSkill.id,
+    proficiencyLevel: 'Beginner',
+  });
+  assert.equal(created.response.status, 201, created.text);
+
+  const compared = await requestJson(baseUrl, gapPath(occupation.id), { cookies: student.cookies });
+  assert.equal(compared.response.status, 200, compared.text);
+  assert.equal(compared.json.occupation.id, occupation.id);
+  assert.equal(compared.json.recordedSkillCount, 1);
+  const sqlOnOccupation = compared.json.items.some((item) => item.skill.id === sqlSkill.id);
+  if (sqlOnOccupation) {
+    assert.equal(compared.json.items.find((item) => item.skill.id === sqlSkill.id).recorded, true);
+  } else {
+    assert.equal(compared.json.matchedOccupationSkillCount, 0);
+    assert.equal(compared.json.unmatchedRecordedSkills.length, 1);
+    assert.equal(compared.json.unmatchedRecordedSkills[0].skill.id, sqlSkill.id);
+    assert.equal(compared.json.unmatchedRecordedSkills[0].skill.preferredLabel, 'SQL');
+    assert.match(compared.json.coverageExplanation, /SQL/);
+  }
+
+  const linked = await postJson(baseUrl, '/api/me/skills', sessionOf(student), {
+    skillId: ictSafety.id,
+    proficiencyLevel: 'Intermediate',
+  });
+  assert.equal(linked.response.status, 201, linked.text);
+  const updated = await requestJson(baseUrl, gapPath(occupation.id), { cookies: student.cookies });
+  assert.equal(updated.response.status, 200, updated.text);
+  assert.equal(updated.json.recordedSkillCount, 2);
+  assert.equal(updated.json.items.find((item) => item.skill.id === ictSafety.id).recorded, true);
+  assert.equal(updated.json.matchedOccupationSkillCount >= 1, true);
+});
+
+test('unknown skill identifiers cannot be recorded for skill-gap matching', async () => {
+  const student = await registerAs('invalid-skill');
+  const created = await postJson(baseUrl, '/api/me/skills', sessionOf(student), {
+    skillId: UNKNOWN_OCCUPATION_ID,
+    proficiencyLevel: 'Beginner',
+  });
+  assert.equal(created.response.status, 404);
+  const gap = await requestJson(baseUrl, gapPath(occupation.id), { cookies: student.cookies });
+  assert.equal(gap.response.status, 200);
+  assert.equal(gap.json.recordedSkillCount, 0);
 });

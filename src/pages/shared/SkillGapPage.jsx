@@ -246,7 +246,7 @@ function SkillGapPage({ basePath }) {
             <form className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]" onSubmit={occupations.search}>
               <SearchInput
                 id="skill-gap-occupation-search"
-                label="Search occupations"
+                label="Search ESCO occupations"
                 value={occupations.input}
                 onChange={(event) => occupations.setInput(event.target.value)}
                 placeholder="chief ICT security officer"
@@ -264,7 +264,7 @@ function SkillGapPage({ basePath }) {
                 empty={occupations.items.length === 0}
                 loadingLabel="Loading occupations…"
                 emptyTitle="No occupations match this search yet."
-                emptyDescription="Try a different occupation name, or clear the search to browse the catalogue."
+                emptyDescription="Try a different ESCO occupation name, or clear the search to browse the ESCO catalogue."
                 onRetry={occupations.retry}
               >
                 <Table
@@ -339,8 +339,14 @@ function SkillGapPage({ basePath }) {
                   <p className="po-secondary mt-1 break-all">{result.occupation.sourceUri}</p>
                   <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
-                      <p className="po-secondary">Occupation skills</p>
+                      <p className="po-secondary">Occupation-linked skills</p>
                       <p className="po-stat-value mt-1">{result.totals.relations}</p>
+                    </div>
+                    <div>
+                      <p className="po-secondary">Occupation-linked recorded</p>
+                      <p className="po-stat-value mt-1">
+                        {result.matchedOccupationSkillCount} of {result.totals.relations}
+                      </p>
                     </div>
                     <div>
                       <p className="po-secondary">Essential recorded</p>
@@ -360,6 +366,24 @@ function SkillGapPage({ basePath }) {
                     </div>
                   </div>
                   <p className="po-secondary mt-5">{SKILL_GAP_DISCLAIMER}</p>
+                  {result.coverageExplanation ? (
+                    <p className="po-secondary mt-3">{result.coverageExplanation}</p>
+                  ) : null}
+                  {result.unmatchedRecordedSkills.length > 0 ? (
+                    <div className="mt-5">
+                      <h3 className="po-card-title">Recorded skills not linked to this occupation</h3>
+                      <p className="po-helper mt-1">
+                        These UserSkill rows are valid ESCO records. They are excluded from occupation-linked coverage because they do not share an ESCO skill identifier with this occupation.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {result.unmatchedRecordedSkills.map((item) => (
+                          <Badge key={item.skill.id} tone="warning" className="normal-case">
+                            {item.skill.preferredLabel} · {item.proficiencyLevel}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="mt-5 space-y-6">
                     <div>
                       <h3 className="po-card-title">Essential skills</h3>

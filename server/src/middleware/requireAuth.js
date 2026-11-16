@@ -11,14 +11,11 @@ export function publicUser(user) {
   };
 }
 
-export const requireAuth = asyncHandler(async (req, res, next) => {
-  const userId = req.session?.userId;
+async function loadSessionUser(userId) {
   if (!userId) {
-    res.status(401).json({ error: 'Unauthenticated' });
-    return;
+    return null;
   }
-
-  const user = await prisma.user.findUnique({
+  return prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -28,7 +25,18 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
       accountStatus: true,
     },
   });
+}
 
+export const optionalAuth = asyncHandler(async (req, _res, next) => {
+  const user = await loadSessionUser(req.session?.userId);
+  if (user && user.accountStatus !== 'SUSPENDED') {
+    req.user = user;
+  }
+  next();
+});
+
+export const requireAuth = asyncHandler(async (req, res, next) => {
+  const user = await loadSessionUser(req.session?.userId);
   if (!user) {
     res.status(401).json({ error: 'Unauthenticated' });
     return;

@@ -40,6 +40,7 @@ let server;
 let baseUrl;
 let baseline;
 let existingFingerprint;
+let leftoverEmail;
 
 async function snapshotExistingUsers() {
   return prisma.user.findMany({
@@ -105,6 +106,23 @@ function assertSafeProfile(json, expected) {
 }
 
 before(async () => {
+  leftoverEmail = `stage61-existing-${Date.now()}@peaceone.fixture`;
+  await prisma.user.create({
+    data: {
+      email: leftoverEmail,
+      passwordHash: await hashPassword(TEST_PASSWORD),
+      fullName: 'Existing Profile Fixture',
+      role: 'STUDENT',
+      accountStatus: 'ACTIVE',
+      educationLevel: "Bachelor's Degree",
+      fieldOfStudy: 'Computer Science',
+      institution: 'TAR UMT',
+      graduationYear: 2026,
+      location: 'Kuala Lumpur',
+      experienceSummary: 'Campus project work',
+    },
+  });
+
   baseline = {
     occupations: await prisma.occupation.count(),
     skills: await prisma.skill.count(),
@@ -143,6 +161,10 @@ after(async () => {
       await new Promise((resolve, reject) => {
         server.close((err) => (err ? reject(err) : resolve()));
       });
+    }
+
+    if (leftoverEmail) {
+      await prisma.user.deleteMany({ where: { email: leftoverEmail } });
     }
 
     await Promise.all([
@@ -575,7 +597,7 @@ const extendedFieldSelect = {
   department: true,
 };
 
-test('existing leftover profiles keep their saved extended fields', async () => {
+test('pre-existing profiles keep their saved extended fields', async () => {
   const leftover = await prisma.user.findMany({
     where: { NOT: { email: { startsWith: TEST_EMAIL_PREFIX } } },
     select: existingUserSelect,

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeLabelSearch, paginationMeta } from './escoQuery.js';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -37,6 +38,34 @@ const optionalLimitedString = (max) => z.preprocess(
 
 export const companyIdParamsSchema = z.object({
   id: z.string().regex(UUID_RE),
+});
+
+function singleQueryValue(value) {
+  if (value === undefined || value === '') {
+    return undefined;
+  }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  return String(value);
+}
+
+const optionalQueryString = z.preprocess(singleQueryValue, z.string().max(200).optional());
+
+const pageQuery = z.preprocess((value) => {
+  const normalized = singleQueryValue(value);
+  return normalized === undefined ? '1' : normalized;
+}, z.string().regex(/^[1-9]\d{0,6}$/).transform((value) => Number.parseInt(value, 10)));
+
+const limitQuery = z.preprocess((value) => {
+  const normalized = singleQueryValue(value);
+  return normalized === undefined ? '20' : normalized;
+}, z.string().regex(/^[1-9]\d{0,2}$/).transform((value) => Number.parseInt(value, 10)).refine((value) => value <= 50));
+
+export const adminCompanyListQuerySchema = z.object({
+  q: optionalQueryString,
+  page: pageQuery,
+  limit: limitQuery,
 });
 
 export const upsertCompanyBodySchema = z
@@ -161,4 +190,119 @@ export async function findCompanyById(client, id) {
     where: { id },
     select: companySelect,
   });
+}
+
+function jobCountsFromRows(rows) {
+  const counts = {
+    jobCount: 0,
+    publishedJobCount: 0,
+    draftJobCount: 0,
+    closedJobCount: 0,
+    suspendedJobCount: 0,
+  };
+  for (const row of rows) {
+    counts.jobCount += row._count._all;
+    if (row.status === 'PUBLISHED') counts.publishedJobCount = row._count._all;
+    if (row.status === 'DRAFT') counts.draftJobCount = row._count._all;
+    if (row.status === 'CLOSED') counts.closedJobCount = row._count._all;
+    if (row.status === 'SUSPENDED') counts.suspendedJobCount = row._count._all;
+  }
+  return counts;
+}
+
+export function serializeAdminCompany(company, extras = {}) {
+  return {
+    ...serializeCompany(company),
+    staffCount: extras.staffCount ?? 0,
+    jobCount: extras.jobCount ?? 0,
+    publishedJobCount: extras.publishedJobCount ?? 0,
+    draftJobCount: extras.draftJobCount ?? 0,
+    closedJobCount: extras.closedJobCount ?? 0,
+    suspendedJobCount: extras.suspendedJobCount ?? 0,
+  };
+}
+
+export async function listAdminCompanies(client, query) {
+  const search = normalizeLabelSearch(query.q);
+  const where = search
+    ? { companyName: { contains: search, mode: 'insensitive' } }
+    : {};
+  const skip = (query.page - 1) * query.limit;
+  const [total, records] = await Promise.all([
+    client.company.count({ where }),
+    client.company.findMany({
+      where,
+      select: {
+        ...companySelect,
+        _count: { select: { staff: true, jobs: true } },
+      },
+      orderBy: [{ companyName: 'asc' }],
+      skip,
+      take: query.limit,
+    }),
+  ]);
+  const ids = records.map((company) => company.id);
+  const jobRows = ids.length
+    ? await client.job.groupBy({
+      by: ['companyId', 'status'],
+      where: { companyId: { in: ids } },
+      _count: { _all: true },
+    })
+    : [];
+  const jobsByCompany = new Map();
+  for (const row of jobRows) {
+    const current = jobsByCompany.get(row.companyId) || [];
+    current.push(row);
+    jobsByCompany.set(row.companyId, current);
+  }
+  return {
+    companies: records.map((company) => serializeAdminCompany(company, {
+      staffCount: company._count.staff,
+      ...jobCountsFromRows(jobsByCompany.get(company.id) || []),
+    })),
+    ...paginationMeta(query.page, query.limit, total),
+  };
+}
+
+export async function findAdminCompany(client, id) {
+  const company = await client.company.findUnique({
+    where: { id },
+    select: {
+      ...companySelect,
+      staff: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          accountStatus: true,
+          jobTitle: true,
+        },
+        orderBy: { fullName: 'asc' },
+      },
+      _count: { select: { staff: true, jobs: true } },
+    },
+  });
+  if (!company) {
+    return null;
+  }
+  const jobRows = await client.job.groupBy({
+    by: ['status'],
+    where: { companyId: id },
+    _count: { _all: true },
+  });
+  return {
+    company: serializeAdminCompany(company, {
+      staffCount: company._count.staff,
+      ...jobCountsFromRows(jobRows.map((row) => ({ ...row, companyId: id }))),
+    }),
+    staff: company.staff.map((member) => ({
+      id: member.id,
+      fullName: member.fullName,
+      email: member.email,
+      role: member.role,
+      accountStatus: member.accountStatus,
+      jobTitle: member.jobTitle ?? null,
+    })),
+  };
 }

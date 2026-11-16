@@ -1,4 +1,4 @@
-import { Menu, Search } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import Avatar from '../common/Avatar.jsx'
 import NotificationBell from '../notifications/NotificationBell.jsx'
 
@@ -7,7 +7,6 @@ function TopHeader({
   onMenuClick,
   userName = 'Alex Tan',
   userRole,
-  showSearch = true,
   notificationTo,
 }) {
   return (
@@ -24,22 +23,6 @@ function TopHeader({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-ink">{title}</p>
       </div>
-
-      {showSearch ? (
-        <div className="relative hidden min-w-0 w-44 max-w-sm flex-1 xl:block">
-          <Search
-            size={16}
-            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            placeholder="Search"
-            aria-label="Search"
-            className="po-field h-10 pl-9"
-          />
-        </div>
-      ) : null}
 
       <NotificationBell centreTo={notificationTo} />
 

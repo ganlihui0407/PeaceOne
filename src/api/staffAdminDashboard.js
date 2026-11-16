@@ -1,3 +1,4 @@
+import { fetchAdminPlatformStats } from './adminPlatform.js'
 import {
   emptyApplicationStats,
   fetchAdminApplicationStats,
@@ -24,9 +25,27 @@ export const STAFF_COMPANY_EMPTY = {
 }
 
 export const STAFF_JOBS_UNAVAILABLE = {
-  title: 'Job postings are managed on Jobs.',
+  title: 'No job postings yet.',
   description:
-    'Open Jobs to create, edit, publish or close company vacancies. This dashboard does not invent vacancy counts.',
+    'Open Jobs to create, edit, publish or close company vacancies. Counts below are calculated from this company’s stored jobs.',
+}
+
+export function staffJobCountsFromApplicationStats(stats) {
+  const jobs = Array.isArray(stats?.jobs) ? stats.jobs : []
+  const counts = {
+    total: jobs.length,
+    published: 0,
+    draft: 0,
+    closed: 0,
+    suspended: 0,
+  }
+  for (const job of jobs) {
+    if (job.status === 'PUBLISHED') counts.published += 1
+    else if (job.status === 'DRAFT') counts.draft += 1
+    else if (job.status === 'CLOSED') counts.closed += 1
+    else if (job.status === 'SUSPENDED') counts.suspended += 1
+  }
+  return counts
 }
 
 export const STAFF_APPLICATIONS_EMPTY = {
@@ -43,8 +62,8 @@ export const STAFF_PROFILE_INCOMPLETE = {
 }
 
 export const ADMIN_USERS_UNAVAILABLE = {
-  title: 'User totals are not connected yet.',
-  description: 'PeaceOne does not expose a live user-count API yet. This dashboard does not invent platform statistics.',
+  title: 'User totals load from PostgreSQL.',
+  description: 'Open Users to search and suspend accounts. Counts on this dashboard are live aggregates, not mock figures.',
 }
 
 export const ADMIN_JOBS_UNAVAILABLE = {
@@ -54,8 +73,8 @@ export const ADMIN_JOBS_UNAVAILABLE = {
 }
 
 export const ADMIN_LEARNING_UNAVAILABLE = {
-  title: 'Learning content statistics are not connected yet.',
-  description: 'PeaceOne does not store learning-content records or review queues yet.',
+  title: 'Learning totals load from PostgreSQL.',
+  description: 'Open Learning Content to publish courses. Enrolment counts on this dashboard are live aggregates.',
 }
 
 export const ADMIN_ACTIVITY_UNAVAILABLE = {
@@ -65,6 +84,7 @@ export const ADMIN_ACTIVITY_UNAVAILABLE = {
 
 export const ADMIN_SHORTCUTS = [
   { label: 'Manage Users', to: '/admin/users' },
+  { label: 'Companies', to: '/admin/companies' },
   { label: 'Review Jobs', to: '/admin/jobs' },
   { label: 'Manage Learning Content', to: '/admin/learning' },
   { label: 'View Reports', to: '/admin/reports' },
@@ -136,15 +156,17 @@ export async function fetchStaffDashboard({ signal } = {}) {
 
 export async function fetchAdminDashboard({ signal } = {}) {
   try {
-    const [profile, applicationStats, interviewStats] = await Promise.all([
+    const [profile, applicationStats, interviewStats, platformStats] = await Promise.all([
       fetchMeProfile({ signal }),
       fetchAdminApplicationStats({ signal }),
       fetchAdminInterviewStats({ signal }),
+      fetchAdminPlatformStats({ signal }),
     ])
     return {
       ...buildAdminDashboard(profile),
       applicationStats,
       interviewStats,
+      platformStats,
     }
   } catch (error) {
     if (isAbortError(error) || error instanceof ApiError) {

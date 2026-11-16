@@ -3,6 +3,7 @@ import { candidateApplicationPath, employerApplicantPath } from './applications.
 import { ApiError, apiRequest } from './client.js'
 import { buildSearchParams, isAbortError } from './esco.js'
 import { candidateInterviewPath, employerInterviewPath } from './interviews.js'
+import { learningCoursePath } from './learning.js'
 import { formatJobDateTime } from './jobs.js'
 
 export const NOTIFICATIONS_UNAVAILABLE = 'Notification data is unavailable right now.'
@@ -27,6 +28,8 @@ export const NOTIFICATION_TYPES = [
   'APPLICATION_SUBMITTED',
   'APPLICATION_SHORTLISTED',
   'APPLICATION_REJECTED',
+  'APPLICATION_OFFERED',
+  'LEARNING_COURSE_COMPLETED',
   'INTERVIEW_INVITED',
   'INTERVIEW_ACCEPTED',
   'INTERVIEW_RESCHEDULE_REQUESTED',
@@ -35,7 +38,7 @@ export const NOTIFICATION_TYPES = [
   'INTERVIEW_COMPLETED',
 ]
 
-export const NOTIFICATION_RELATED_ENTITY_TYPES = ['APPLICATION', 'INTERVIEW']
+export const NOTIFICATION_RELATED_ENTITY_TYPES = ['APPLICATION', 'INTERVIEW', 'LEARNING_CONTENT']
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -191,6 +194,9 @@ export function notificationDestination(role, notification) {
     if (relatedEntityType === 'INTERVIEW') {
       return candidateInterviewPath(basePath, relatedEntityId)
     }
+    if (relatedEntityType === 'LEARNING_CONTENT') {
+      return learningCoursePath(basePath, relatedEntityId)
+    }
     return null
   }
   if (role === 'COMPANY_STAFF') {
@@ -201,6 +207,9 @@ export function notificationDestination(role, notification) {
       return employerInterviewPath(relatedEntityId)
     }
     return null
+  }
+  if (role === 'ADMIN' && relatedEntityType === 'LEARNING_CONTENT') {
+    return `/admin/learning/${encodeURIComponent(relatedEntityId)}/edit`
   }
   return null
 }
@@ -218,6 +227,9 @@ function relatedRecordApiPath(role, notification) {
     if (relatedEntityType === 'INTERVIEW') {
       return `/api/me/interviews/${encodeURIComponent(relatedEntityId)}`
     }
+    if (relatedEntityType === 'LEARNING_CONTENT') {
+      return `/api/learning/courses/${encodeURIComponent(relatedEntityId)}`
+    }
     return null
   }
   if (role === 'COMPANY_STAFF') {
@@ -227,6 +239,9 @@ function relatedRecordApiPath(role, notification) {
     if (relatedEntityType === 'INTERVIEW') {
       return `/api/employer/interviews/${encodeURIComponent(relatedEntityId)}`
     }
+  }
+  if (role === 'ADMIN' && relatedEntityType === 'LEARNING_CONTENT') {
+    return `/api/admin/learning/courses/${encodeURIComponent(relatedEntityId)}`
   }
   return null
 }

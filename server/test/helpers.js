@@ -1,3 +1,5 @@
+export { assertSafeDestructiveTestOperation } from '../src/lib/testDatabaseGuard.js';
+
 export const TEST_PASSWORD = 'ValidPass1';
 
 export function cookieHeader(response, previous = '') {

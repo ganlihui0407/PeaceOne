@@ -16,6 +16,7 @@ import {
   fetchEmployerApplicationStats,
   parseAdminApplicationStats,
   parseEmployerApplicationStats,
+  canOfferEmployerApplication,
   canRejectEmployerApplication,
   canReviewEmployerApplication,
   canShortlistEmployerApplication,
@@ -26,6 +27,7 @@ import {
   fetchEmployerApplication,
   fetchEmployerApplications,
   loadEmployerApplicationPdfBlob,
+  offerEmployerApplication,
   parseApplication,
   rejectEmployerApplication,
   reviewEmployerApplication,
@@ -187,9 +189,15 @@ test('parseApplication reads employer applicant profile and rejects snapshot int
   assert.equal(canReviewEmployerApplication(parsed), true)
   assert.equal(canShortlistEmployerApplication(parsed), true)
   assert.equal(canRejectEmployerApplication(parsed), true)
+  assert.equal(canOfferEmployerApplication(parsed), false)
   assert.equal(canReviewEmployerApplication({ status: 'UNDER_REVIEW' }), false)
   assert.equal(canShortlistEmployerApplication({ status: 'SHORTLISTED' }), false)
   assert.equal(canRejectEmployerApplication({ status: 'WITHDRAWN' }), false)
+  assert.equal(canOfferEmployerApplication({ status: 'SHORTLISTED' }), true)
+  assert.equal(canOfferEmployerApplication({ status: 'INTERVIEW' }), true)
+  assert.equal(canOfferEmployerApplication({ status: 'OFFERED' }), false)
+  assert.equal(canRejectEmployerApplication({ status: 'INTERVIEW' }), true)
+  assert.equal(canRejectEmployerApplication({ status: 'OFFERED' }), false)
   assert.deepEqual(reviewNoteBody('  keep this  '), { reviewNote: 'keep this' })
   assert.deepEqual(reviewNoteBody('   '), {})
   assert.equal(reviewNoteBody('n'.repeat(REVIEW_NOTE_MAX + 10)).reviewNote.length, REVIEW_NOTE_MAX)
@@ -284,6 +292,9 @@ test('employer status actions post CSRF without client identities', async () => 
     if (String(path).endsWith('/reject')) {
       return jsonResponse(200, { application: applicationPayload({ status: 'REJECTED' }) })
     }
+    if (String(path).endsWith('/offer')) {
+      return jsonResponse(200, { application: applicationPayload({ status: 'OFFERED' }) })
+    }
     throw new Error(`unexpected ${path}`)
   }
 
@@ -293,6 +304,8 @@ test('employer status actions post CSRF without client identities', async () => 
   assert.equal(shortlisted.status, 'SHORTLISTED')
   const rejected = await rejectEmployerApplication(APPLICATION_ID, { reviewNote: 'Not a match' })
   assert.equal(rejected.status, 'REJECTED')
+  const offered = await offerEmployerApplication(APPLICATION_ID, { reviewNote: 'Offer recorded' })
+  assert.equal(offered.status, 'OFFERED')
 
   const review = calls.find((call) => String(call.path).endsWith('/review'))
   assert.equal(review.headers['x-csrf-token'], 'csrf-employer')
@@ -303,6 +316,9 @@ test('employer status actions post CSRF without client identities', async () => 
   assert.deepEqual(JSON.parse(calls.find((call) => String(call.path).endsWith('/shortlist')).body), {})
   assert.deepEqual(JSON.parse(calls.find((call) => String(call.path).endsWith('/reject')).body), {
     reviewNote: 'Not a match',
+  })
+  assert.deepEqual(JSON.parse(calls.find((call) => String(call.path).endsWith('/offer')).body), {
+    reviewNote: 'Offer recorded',
   })
 })
 
@@ -399,12 +415,16 @@ test('employer applicant pages wire list, details, actions and role protection',
   assert.equal(detail.includes('reviewEmployerApplication'), true)
   assert.equal(detail.includes('shortlistEmployerApplication'), true)
   assert.equal(detail.includes('rejectEmployerApplication'), true)
+  assert.equal(detail.includes('offerEmployerApplication'), true)
   assert.equal(detail.includes('Confirm rejection'), true)
+  assert.equal(detail.includes('Confirm offer'), true)
+  assert.equal(detail.includes('JobSkillMatchPanel'), true)
+  assert.equal(detail.includes('audience="employer"'), true)
   assert.equal(detail.includes('Internal review note'), true)
   assert.equal(detail.includes('REVIEW_NOTE_MAX'), true)
   assert.equal(detail.includes('Status history'), true)
   assert.equal(detail.includes('Move to Interview'), false)
-  assert.equal(detail.includes('Offer'), false)
+  assert.equal(detail.includes('Hiring decisions are not available yet'), false)
   assert.equal(detail.includes('compatibility'), false)
   assert.equal(detail.includes("from '../../data/applicants.js'"), false)
   assert.equal(detail.includes('structuredSnapshot'), false)

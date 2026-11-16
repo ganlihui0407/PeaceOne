@@ -1,14 +1,36 @@
 import './config.js';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import {
+  assertSafeDestructiveTestOperation,
+  isTestDatabaseProcessEnabled,
+  resolvePrismaConnectionString,
+} from './lib/testDatabaseGuard.js';
 
-export function createPrismaClient(connectionString = process.env.DATABASE_URL) {
-  if (!connectionString) {
-    throw new Error('Missing required environment variable: DATABASE_URL');
-  }
-  return new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+export function createPrismaClient(connectionString) {
+  const resolved = resolvePrismaConnectionString(connectionString);
+  const client = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: resolved }),
     log: ['warn', 'error'],
+  });
+
+  if (!isTestDatabaseProcessEnabled()) {
+    return client;
+  }
+
+  return client.$extends({
+    query: {
+      $allModels: {
+        async deleteMany({ args, query }) {
+          await assertSafeDestructiveTestOperation(client);
+          return query(args);
+        },
+        async delete({ args, query }) {
+          await assertSafeDestructiveTestOperation(client);
+          return query(args);
+        },
+      },
+    },
   });
 }
 

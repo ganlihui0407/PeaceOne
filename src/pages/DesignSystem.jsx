@@ -53,7 +53,6 @@ function DesignSystem() {
       userName="PeaceOne"
       userRole="Development preview"
       navItems={[]}
-      showSearch={false}
     >
       <PageContent
         title="PeaceOne design system"

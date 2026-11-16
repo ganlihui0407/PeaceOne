@@ -1,9 +1,35 @@
+import { useEffect, useState } from 'react'
 import Button from '../../../components/common/Button.jsx'
 import CourseCard from '../../../components/cards/CourseCard.jsx'
+import QueryStatus from '../../../components/common/QueryStatus.jsx'
 import Section from '../../../components/layout/Section.jsx'
-import { courses } from '../../../data/courses.js'
+import {
+  fetchPublishedCourses,
+  toPublicCourseCard,
+  userFacingLearningError,
+} from '../../../api/learning.js'
 
 function FeaturedLearningSection() {
+  const [courses, setCourses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  function load() {
+    setLoading(true)
+    setError('')
+    fetchPublishedCourses({ page: 1, limit: 4 })
+      .then((payload) => setCourses(payload.courses ?? []))
+      .catch((loadError) => {
+        setCourses([])
+        setError(userFacingLearningError(loadError))
+      })
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
   return (
     <Section>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -15,10 +41,26 @@ function FeaturedLearningSection() {
           Explore Learning
         </Button>
       </div>
-      <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {courses.slice(0, 4).map((course) => (
-          <CourseCard key={course.id} course={course} to="/learning" />
-        ))}
+      <div className="mt-10">
+        <QueryStatus
+          loading={loading}
+          error={error}
+          empty={!loading && !error && courses.length === 0}
+          loadingLabel="Loading published courses…"
+          emptyTitle="No published courses yet."
+          emptyDescription="When PeaceOne courses are published, they will appear here and on the Learning page."
+          onRetry={load}
+        >
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {courses.map((course) => (
+              <CourseCard
+                key={course.id}
+                course={toPublicCourseCard(course)}
+                to={`/learning/${course.id}`}
+              />
+            ))}
+          </div>
+        </QueryStatus>
       </div>
     </Section>
   )

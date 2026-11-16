@@ -31,7 +31,7 @@ function JobCard({ job, to, actions }) {
       </p>
       {job.description ? <p className="po-body mt-3">{job.description}</p> : null}
       <div className="mt-4 flex flex-wrap gap-2">
-        {job.skills.map((skill) => (
+        {(job.skills ?? []).map((skill) => (
           <Badge key={skill} tone="default">
             {skill}
           </Badge>

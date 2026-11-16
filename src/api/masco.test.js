@@ -278,6 +278,7 @@ test('the MASCO admin catalogue uses the live API and does not keep mock records
   const careerTarget = readFileSync(studentPath, 'utf8')
 
   assert.equal(page.includes('fetchMascoOccupations'), true)
+  assert.equal(page.includes('Search MASCO occupations'), true)
   assert.equal(page.includes('Clear filters'), true)
   assert.equal(page.includes('View Details'), true)
   assert.equal(page.includes('isMascoUnitGroupCode'), true)
@@ -302,6 +303,9 @@ test('the MASCO admin catalogue uses the live API and does not keep mock records
   assert.equal(nav.includes('MASCO Crosswalks'), true)
   assert.equal(nav.includes("to: '/student/masco'"), false)
   assert.equal(careerTarget.includes('fetchMascoOccupations'), false)
+  assert.equal(careerTarget.includes('Search ESCO occupations'), true)
+  assert.equal(careerTarget.includes('MASCO is a separate Malaysian classification catalogue'), true)
+  assert.equal(careerTarget.includes('not used for Career Target, Skill Gap or course recommendations'), true)
 })
 
 test('the MASCO occupation detail page loads by URL code and handles missing records', () => {
@@ -316,6 +320,7 @@ test('the MASCO occupation detail page loads by URL code and handles missing rec
   assert.equal(page.includes('isMascoNotFoundError'), true)
   assert.equal(page.includes('Back to MASCO Catalogue'), true)
   assert.equal(page.includes('MASCO occupation not found'), true)
+  assert.equal(page.includes('does not set Career Target, Skill Gap or course recommendations'), true)
   assert.equal(page.includes('Invalid MASCO occupation code'), true)
   assert.equal(page.includes('Loading MASCO occupation'), true)
   assert.equal(page.includes('onRetry'), true)

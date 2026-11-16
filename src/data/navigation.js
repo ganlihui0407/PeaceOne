@@ -40,6 +40,8 @@ export const jobSeekerNav = [
   { label: 'My Profile', to: '/jobseeker/profile', icon: User },
   { label: 'My Skills', to: '/jobseeker/skills', icon: Sparkles },
   { label: 'My Resume', to: '/jobseeker/resume', icon: FileText },
+  { label: 'Career Target', to: '/jobseeker/career-target', icon: Target },
+  { label: 'Skill Gap Analysis', to: '/jobseeker/skill-gap', icon: ListChecks },
   { label: 'Learning', to: '/jobseeker/learning', icon: BookOpen },
   { label: 'Notifications', to: '/jobseeker/notifications', icon: Bell },
 ]
@@ -57,6 +59,7 @@ export const employerNav = [
 export const adminNav = [
   { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard, end: true },
   { label: 'Users', to: '/admin/users', icon: Users },
+  { label: 'Companies', to: '/admin/companies', icon: Building2 },
   { label: 'Position Requests', to: '/admin/position-requests', icon: ClipboardList, end: true },
   { label: 'MASCO Occupations', to: '/admin/masco', icon: Library, end: true },
   { label: 'MASCO Crosswalks', to: '/admin/masco/crosswalks', icon: History },

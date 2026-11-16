@@ -82,20 +82,23 @@ function CandidateJobsPage({ basePath, variant = 'student' }) {
   const [searchParams] = useSearchParams()
   const initialQuery = (searchParams.get('q') || '').trim()
   const initialLocation = (searchParams.get('location') || '').trim()
+  const [companyInput, setCompanyInput] = useState('')
   const [locationInput, setLocationInput] = useState(initialLocation)
   const [industryInput, setIndustryInput] = useState('')
   const [employmentTypeInput, setEmploymentTypeInput] = useState('')
+  const [appliedCompany, setAppliedCompany] = useState('')
   const [appliedLocation, setAppliedLocation] = useState(initialLocation)
   const [appliedIndustry, setAppliedIndustry] = useState('')
   const [appliedEmploymentType, setAppliedEmploymentType] = useState('')
 
   const extraParams = useMemo(() => {
     const extra = {}
+    if (appliedCompany) extra.company = appliedCompany
     if (appliedLocation) extra.location = appliedLocation
     if (appliedIndustry) extra.industry = appliedIndustry
     if (appliedEmploymentType) extra.employmentType = appliedEmploymentType
     return extra
-  }, [appliedEmploymentType, appliedIndustry, appliedLocation])
+  }, [appliedCompany, appliedEmploymentType, appliedIndustry, appliedLocation])
 
   const list = useEscoPagedSearch(fetchPublishedJobs, {
     limit: JOB_LIST_LIMIT,
@@ -107,6 +110,8 @@ function CandidateJobsPage({ basePath, variant = 'student' }) {
   const hasFilters = Boolean(
     list.input
       || list.query
+      || companyInput
+      || appliedCompany
       || locationInput
       || appliedLocation
       || industryInput
@@ -114,10 +119,13 @@ function CandidateJobsPage({ basePath, variant = 'student' }) {
       || employmentTypeInput
       || appliedEmploymentType,
   )
-  const hasActiveSearch = Boolean(list.query || appliedLocation || appliedIndustry || appliedEmploymentType)
+  const hasActiveSearch = Boolean(
+    list.query || appliedCompany || appliedLocation || appliedIndustry || appliedEmploymentType,
+  )
 
   function applyFilters(event) {
     event.preventDefault()
+    setAppliedCompany(companyInput.trim())
     setAppliedLocation(locationInput.trim())
     setAppliedIndustry(industryInput.trim())
     setAppliedEmploymentType(employmentTypeInput)
@@ -125,9 +133,11 @@ function CandidateJobsPage({ basePath, variant = 'student' }) {
   }
 
   function clearFilters() {
+    setCompanyInput('')
     setLocationInput('')
     setIndustryInput('')
     setEmploymentTypeInput('')
+    setAppliedCompany('')
     setAppliedLocation('')
     setAppliedIndustry('')
     setAppliedEmploymentType('')
@@ -149,6 +159,15 @@ function CandidateJobsPage({ basePath, variant = 'student' }) {
               value={list.input}
               placeholder="Data analyst"
               onChange={(event) => list.setInput(event.target.value)}
+            />
+          </div>
+          <div className="lg:col-span-4">
+            <TextInput
+              id={`${variant}-job-company`}
+              label="Company"
+              value={companyInput}
+              placeholder="TechCorp"
+              onChange={(event) => setCompanyInput(event.target.value)}
             />
           </div>
           <div className="lg:col-span-4">

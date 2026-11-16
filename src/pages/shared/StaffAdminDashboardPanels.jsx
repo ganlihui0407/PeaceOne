@@ -22,6 +22,7 @@ import {
   STAFF_INTERVIEWS_EMPTY,
   STAFF_JOBS_UNAVAILABLE,
   STAFF_PROFILE_INCOMPLETE,
+  staffJobCountsFromApplicationStats,
 } from '../../api/staffAdminDashboard.js'
 import {
   INTERVIEW_STATUS_OPTIONS,
@@ -80,20 +81,42 @@ export function StaffCompanySection({ company, companyTo }) {
   )
 }
 
-export function StaffJobsUnavailableSection() {
+export function StaffJobCountsSection({ stats }) {
+  const counts = staffJobCountsFromApplicationStats(stats)
+  const byStatus = stats?.byStatus || {}
   return (
     <section className="po-section-block">
       <SectionHeader
-        title="Active job postings"
+        title="Job postings"
         action={
           <Button to="/employer/jobs" size="sm" variant="ghost">
             View All Jobs
           </Button>
         }
       />
-      <Card>
-        <EmptyState title={STAFF_JOBS_UNAVAILABLE.title} description={STAFF_JOBS_UNAVAILABLE.description} />
-      </Card>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card padding="sm">
+          <p className="po-helper mt-0">Published jobs</p>
+          <p className="po-page-title mt-1">{counts.published}</p>
+        </Card>
+        <Card padding="sm">
+          <p className="po-helper mt-0">Draft jobs</p>
+          <p className="po-page-title mt-1">{counts.draft}</p>
+        </Card>
+        <Card padding="sm">
+          <p className="po-helper mt-0">Total jobs</p>
+          <p className="po-page-title mt-1">{counts.total}</p>
+        </Card>
+        <Card padding="sm">
+          <p className="po-helper mt-0">New applications</p>
+          <p className="po-page-title mt-1">{byStatus.SUBMITTED ?? 0}</p>
+        </Card>
+      </div>
+      {counts.total === 0 ? (
+        <Card className="mt-4">
+          <EmptyState title={STAFF_JOBS_UNAVAILABLE.title} description={STAFF_JOBS_UNAVAILABLE.description} />
+        </Card>
+      ) : null}
     </section>
   )
 }
@@ -116,13 +139,13 @@ export function StaffApplicationStatsSection({ stats }) {
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card padding="sm">
-          <p className="po-helper mt-0">Total applications</p>
+          <p className="po-helper mt-0">Total applicants</p>
           <p className="po-page-title mt-1">{total}</p>
         </Card>
-        {statusItems.slice(0, 3).map((option) => (
-          <Card key={option.value} padding="sm">
-            <p className="po-helper mt-0">{option.label}</p>
-            <p className="po-card-title mt-1">{byStatus[option.value] ?? 0}</p>
+        {['UNDER_REVIEW', 'SHORTLISTED', 'INTERVIEW', 'OFFERED'].map((status) => (
+          <Card key={status} padding="sm">
+            <p className="po-helper mt-0">{formatApplicationStatus(status)}</p>
+            <p className="po-card-title mt-1">{byStatus[status] ?? 0}</p>
           </Card>
         ))}
       </div>
@@ -298,6 +321,48 @@ export function AdminUnavailableOverview() {
         </Card>
       ))}
     </div>
+  )
+}
+
+export function AdminPlatformStatsSection({ stats }) {
+  const users = stats?.users || {}
+  const jobs = stats?.jobs || {}
+  const learning = stats?.learning || {}
+  const items = [
+    { label: 'Total users', value: users.total ?? 0, to: '/admin/users' },
+    { label: 'Candidates', value: (users.students ?? 0) + (users.jobSeekers ?? 0), to: '/admin/users' },
+    { label: 'Students', value: users.students ?? 0, to: '/admin/users' },
+    { label: 'Job seekers', value: users.jobSeekers ?? 0, to: '/admin/users' },
+    { label: 'Company staff', value: users.companyStaff ?? 0, to: '/admin/users' },
+    { label: 'Registered companies', value: stats?.companies?.total ?? 0, to: '/admin/companies' },
+    { label: 'Total jobs', value: jobs.total ?? 0, to: '/admin/jobs' },
+    { label: 'Published jobs', value: jobs.published ?? 0, to: '/admin/jobs' },
+    { label: 'Draft jobs', value: jobs.draft ?? 0, to: '/admin/jobs' },
+    { label: 'Offers issued', value: stats?.applications?.byStatus?.OFFERED ?? 0, to: '/admin/reports' },
+    { label: 'Published courses', value: learning.publishedCourses ?? 0, to: '/admin/learning' },
+    { label: 'Learning enrolments', value: learning.enrollments ?? 0, to: '/admin/learning' },
+    { label: 'Completed courses', value: learning.completed ?? 0, to: '/admin/learning' },
+  ]
+  return (
+    <section className="po-section-block">
+      <SectionHeader title="Platform totals" />
+      <p className="po-secondary mb-4">
+        These counts are calculated from PostgreSQL. They are not hardcoded demonstration numbers.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        {items.map((item) => (
+          <Card key={item.label} padding="sm">
+            <p className="po-helper mt-0">{item.label}</p>
+            <p className="po-page-title mt-1">{item.value}</p>
+            <div className="mt-3">
+              <Button to={item.to} size="sm" variant="ghost" className="px-0">
+                Open
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </section>
   )
 }
 

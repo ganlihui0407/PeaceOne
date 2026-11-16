@@ -13,6 +13,7 @@ import {
   LEARNING_UNAVAILABLE,
   buildLearningRecommendations,
   fetchLearningRecommendations,
+  occupationSkillList,
   learningCareerTargetPath,
   learningSkillGapPath,
   learningSkillsPath,
@@ -146,6 +147,9 @@ test('an empty career target does not load skill-gap recommendations', async () 
 
 test('unrecorded essential skills are recommended before optional skills', () => {
   const result = buildLearningRecommendations(parseSkillGapResult(gapPayload()))
+  const combined = occupationSkillList(result)
+  assert.equal(combined.length, 3)
+  assert.equal(combined[0].relationType, 'essential')
   assert.deepEqual(
     result.topics.map((topic) => topic.relationType),
     ['essential', 'optional'],
@@ -285,6 +289,8 @@ test('the Learning page does not keep mock courses, percentages or gap copy', ()
   assert.equal(page.includes('skillGapData'), false)
   assert.equal(page.includes('fetchLearningRecommendations'), true)
   assert.equal(page.includes('Go to Career Target'), true)
+  assert.equal(page.includes('Find Related Courses'), true)
+  assert.equal(page.includes('skillId'), true)
   assert.equal(page.includes('clearCareerTarget'), false)
   assert.equal(moduleSource.includes(LEARNING_DISCLAIMER.slice(0, 40)), true)
   assert.equal(moduleSource.includes('openai'), false)

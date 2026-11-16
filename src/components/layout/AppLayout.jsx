@@ -6,7 +6,6 @@ function AppLayout({
   title,
   userName = 'Alex Tan',
   userRole,
-  showSearch = true,
   navItems,
   settingsTo,
   notificationTo,
@@ -32,7 +31,6 @@ function AppLayout({
           title={title}
           userName={userName}
           userRole={userRole}
-          showSearch={showSearch}
           notificationTo={notificationTo}
           onMenuClick={() => setSidebarOpen(true)}
         />

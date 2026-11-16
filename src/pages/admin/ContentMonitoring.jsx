@@ -1,121 +1,154 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Badge from '../../components/common/Badge.jsx'
 import Button from '../../components/common/Button.jsx'
-import Modal from '../../components/common/Modal.jsx'
+import QueryStatus from '../../components/common/QueryStatus.jsx'
 import Table from '../../components/common/Table.jsx'
-import Toast from '../../components/common/Toast.jsx'
+import Card from '../../components/cards/Card.jsx'
 import PageContent from '../../components/layout/PageContent.jsx'
-import { adminContentMonitoring } from '../../data/adminContentMonitoring.js'
+import {
+  fetchAdminContentMonitoring,
+  userFacingAdminPlatformError,
+} from '../../api/adminPlatform.js'
+import { formatAdminDate } from '../../api/adminUsers.js'
+import { formatJobStatus, jobStatusTone } from '../../api/jobs.js'
+import { formatCourseStatus } from '../../api/learning.js'
 
 function ContentMonitoring() {
-  const [statusById, setStatusById] = useState({})
-  const [hiddenIds, setHiddenIds] = useState([])
-  const [selected, setSelected] = useState(null)
-  const [toast, setToast] = useState('')
+  const [payload, setPayload] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  function showToast(message) {
-    setToast(message)
-    window.setTimeout(() => setToast(''), 2500)
+  function load() {
+    setLoading(true)
+    setError('')
+    fetchAdminContentMonitoring()
+      .then(setPayload)
+      .catch((loadError) => {
+        setPayload(null)
+        setError(userFacingAdminPlatformError(loadError))
+      })
+      .finally(() => setLoading(false))
   }
 
-  const rows = adminContentMonitoring
-    .filter((item) => !hiddenIds.includes(item.id))
-    .map((item) => ({
-      ...item,
-      status: statusById[item.id] || item.status,
-    }))
-
-  function keepItem(item) {
-    setStatusById((current) => ({ ...current, [item.id]: 'Approved' }))
-    setSelected(null)
-    showToast('Content kept.')
-  }
-
-  function removeItem(item) {
-    setHiddenIds((current) => (current.includes(item.id) ? current : [...current, item.id]))
-    setSelected(null)
-    showToast('Content removed from the current list.')
-  }
+  useEffect(() => {
+    load()
+  }, [])
 
   return (
     <PageContent
       title="Content Monitoring"
-      description="Review flagged job postings and learning resources."
+      description="Live published and suspended jobs, published and archived courses, and recent job status changes."
     >
-      <Table
-        minWidthClass="min-w-[960px]"
-        headers={['Content', 'Content Type', 'Submitted By', 'Reason', 'Status', 'Date', 'Actions']}
-        rows={rows.map((item) => [
-          item.content,
-          item.contentType,
-          item.submittedBy,
-          item.reason,
-          <Badge key={`${item.id}-status`} status={item.status.toLowerCase()} className="normal-case">
-            {item.status}
-          </Badge>,
-          item.date,
-          <div key={`${item.id}-actions`} className="flex flex-wrap gap-2">
-            <Button size="sm" variant="secondary" onClick={() => setSelected(item)}>
-              Review
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => keepItem(item)}>
-              Keep
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => removeItem(item)}>
-              Remove
-            </Button>
-          </div>,
-        ])}
-      />
-
-      <Modal
-        open={Boolean(selected)}
-        title={selected ? selected.content : 'Content review'}
-        size="lg"
-        onClose={() => setSelected(null)}
-        footer={
-          selected ? (
-            <>
-              <Button variant="secondary" onClick={() => keepItem(selected)}>
-                Keep
-              </Button>
-              <Button variant="danger" onClick={() => removeItem(selected)}>
-                Remove
-              </Button>
-            </>
-          ) : null
-        }
+      <QueryStatus
+        loading={loading}
+        error={error}
+        loadingLabel="Loading monitoring data…"
+        onRetry={load}
       >
-        {selected ? (
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="po-helper">Content Type</dt>
-              <dd className="font-medium text-ink">{selected.contentType}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Submitted By</dt>
-              <dd className="font-medium text-ink">{selected.submittedBy}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Date</dt>
-              <dd className="font-medium text-ink">{selected.date}</dd>
-            </div>
-            <div>
-              <dt className="po-helper">Status</dt>
-              <dd>
-                <Badge status={selected.status.toLowerCase()} className="normal-case">
-                  {selected.status}
-                </Badge>
-              </dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="po-helper">Reason</dt>
-              <dd className="po-body mt-1">{selected.reason}</dd>
-            </div>
-          </dl>
+        {payload ? (
+          <div className="space-y-8">
+            <Card>
+              <h2 className="po-section-title">Moderation queue</h2>
+              <p className="po-body mt-3">{payload.moderationNote}</p>
+              <p className="po-secondary mt-2">
+                Flagged Keep/Remove actions are not available because PeaceOne does not store a moderation queue.
+                Suspend or close jobs on Job Monitoring. Publish or archive courses on Learning Content.
+              </p>
+            </Card>
+
+            <section>
+              <h2 className="po-section-title mb-3">Published jobs</h2>
+              <Table
+                minWidthClass="min-w-[720px]"
+                headers={['Job', 'Company', 'Status', 'Updated', 'Actions']}
+                emptyTitle="No published jobs."
+                rows={(payload.publishedJobs || []).map((job) => [
+                  job.title,
+                  job.companyName || '—',
+                  <Badge key={`${job.id}-st`} tone={jobStatusTone(job.status)} className="normal-case">
+                    {formatJobStatus(job.status)}
+                  </Badge>,
+                  formatAdminDate(job.updatedAt),
+                  <Button key={`${job.id}-view`} size="sm" variant="secondary" to={`/admin/jobs/${job.id}`}>
+                    Open
+                  </Button>,
+                ])}
+              />
+            </section>
+
+            <section>
+              <h2 className="po-section-title mb-3">Suspended jobs</h2>
+              <Table
+                minWidthClass="min-w-[720px]"
+                headers={['Job', 'Company', 'Status', 'Updated', 'Actions']}
+                emptyTitle="No suspended jobs."
+                rows={(payload.suspendedJobs || []).map((job) => [
+                  job.title,
+                  job.companyName || '—',
+                  <Badge key={`${job.id}-st`} tone={jobStatusTone(job.status)} className="normal-case">
+                    {formatJobStatus(job.status)}
+                  </Badge>,
+                  formatAdminDate(job.updatedAt),
+                  <Button key={`${job.id}-view`} size="sm" variant="secondary" to={`/admin/jobs/${job.id}`}>
+                    Open
+                  </Button>,
+                ])}
+              />
+            </section>
+
+            <section>
+              <h2 className="po-section-title mb-3">Published courses</h2>
+              <Table
+                minWidthClass="min-w-[640px]"
+                headers={['Course', 'Status', 'Updated', 'Actions']}
+                emptyTitle="No published courses."
+                rows={(payload.publishedCourses || []).map((course) => [
+                  course.title,
+                  formatCourseStatus(course.status),
+                  formatAdminDate(course.updatedAt),
+                  <Button key={`${course.id}-edit`} size="sm" variant="secondary" to={`/admin/learning/${course.id}/edit`}>
+                    Open
+                  </Button>,
+                ])}
+              />
+            </section>
+
+            <section>
+              <h2 className="po-section-title mb-3">Archived courses</h2>
+              <Table
+                minWidthClass="min-w-[640px]"
+                headers={['Course', 'Status', 'Updated', 'Actions']}
+                emptyTitle="No archived courses."
+                rows={(payload.archivedCourses || []).map((course) => [
+                  course.title,
+                  formatCourseStatus(course.status),
+                  formatAdminDate(course.updatedAt),
+                  <Button key={`${course.id}-edit`} size="sm" variant="secondary" to={`/admin/learning/${course.id}/edit`}>
+                    Open
+                  </Button>,
+                ])}
+              />
+            </section>
+
+            <section>
+              <h2 className="po-section-title mb-3">Recent job status changes</h2>
+              <Table
+                minWidthClass="min-w-[880px]"
+                headers={['Job', 'Company', 'From', 'To', 'Actor', 'Date']}
+                emptyTitle="No job status events yet."
+                rows={(payload.recentJobStatusEvents || []).map((event) => [
+                  event.job?.title || '—',
+                  event.job?.companyName || '—',
+                  event.fromStatus || '—',
+                  event.toStatus,
+                  event.actor?.fullName || '—',
+                  formatAdminDate(event.createdAt),
+                ])}
+              />
+            </section>
+          </div>
         ) : null}
-      </Modal>
-      <Toast message={toast} />
+      </QueryStatus>
     </PageContent>
   )
 }

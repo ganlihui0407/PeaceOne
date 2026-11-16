@@ -7,6 +7,7 @@ import {
   skillGapQuerySchema,
   skillGapRelationOrder,
   skillGapRelationSelect,
+  skillGapUserSkillSelect,
 } from '../lib/skillGapQuery.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/requireAuth.js';
@@ -34,7 +35,7 @@ skillGapRouter.get(
       }),
       prisma.userSkill.findMany({
         where: { userId: req.user.id },
-        select: { skillId: true, proficiencyLevel: true },
+        select: skillGapUserSkillSelect,
       }),
     ]);
 

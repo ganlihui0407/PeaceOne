@@ -156,6 +156,31 @@ test('unauthenticated and unavailable accounts keep a clear comparison error', (
   )
 })
 
+test('unmatched recorded skills are parsed without inflating occupation-linked totals', () => {
+  const parsed = parseSkillGapResult(
+    gapPayload({
+      recordedSkillCount: 2,
+      matchedOccupationSkillCount: 1,
+      unmatchedRecordedSkills: [
+        {
+          proficiencyLevel: 'Beginner',
+          skill: skillSummary({
+            id: '44444444-4444-4444-8444-444444444444',
+            preferredLabel: 'SQL',
+            sourceUri: 'http://data.europa.eu/esco/skill/598de5b0-5b58-4ea7-8058-a4bc4d18c742',
+          }),
+        },
+      ],
+      coverageExplanation: 'You have 2 recorded ESCO skills. 1 of 2 official occupation-linked skills match by ESCO identifier.',
+    }),
+  )
+  assert.equal(parsed.recordedSkillCount, 2)
+  assert.equal(parsed.matchedOccupationSkillCount, 1)
+  assert.equal(parsed.unmatchedRecordedSkills[0].skill.preferredLabel, 'SQL')
+  assert.equal(parsed.totals.essential.recorded, 1)
+  assert.match(parsed.coverageExplanation, /ESCO identifier/)
+})
+
 test('parsed results never expose a match percentage', () => {
   const parsed = parseSkillGapResult(
     gapPayload({
