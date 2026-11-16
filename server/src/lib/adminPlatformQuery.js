@@ -1,11 +1,37 @@
+import { z } from 'zod';
 import { ACCOUNT_STATUSES, USER_ROLES, listAdminUserStats } from './adminUserQuery.js';
 import { APPLICATION_STATUSES } from './applicationQuery.js';
+import { paginationMeta } from './escoQuery.js';
 import { JOB_STATUSES } from './jobQuery.js';
 import { INTERVIEW_STATUSES } from './interviewQuery.js';
 import {
   LEARNING_ENROLLMENT_STATUSES,
   LEARNING_STATUSES,
 } from './learningQuery.js';
+
+const ADMIN_ACTIVITY_PAGE = 1;
+const ADMIN_ACTIVITY_LIMIT = 10;
+
+function singleQueryValue(value) {
+  if (value === undefined || value === '') {
+    return undefined;
+  }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  return String(value);
+}
+
+export const adminActivityQuerySchema = z.object({
+  page: z.preprocess((value) => {
+    const normalized = singleQueryValue(value);
+    return normalized === undefined ? String(ADMIN_ACTIVITY_PAGE) : normalized;
+  }, z.string().regex(/^[1-9]\d{0,6}$/).transform((value) => Number.parseInt(value, 10))),
+  limit: z.preprocess((value) => {
+    const normalized = singleQueryValue(value);
+    return normalized === undefined ? String(ADMIN_ACTIVITY_LIMIT) : normalized;
+  }, z.string().regex(/^[1-9]\d{0,2}$/).transform((value) => Number.parseInt(value, 10)).refine((value) => value <= 50)),
+});
 
 function zeroMap(keys) {
   return Object.fromEntries(keys.map((key) => [key, 0]));
@@ -76,6 +102,125 @@ export async function listAdminPlatformStats(client) {
       completed: learningCompleted,
       coursesByStatus,
     },
+    recentActivity: await listAdminRecentActivity(client, {
+      page: ADMIN_ACTIVITY_PAGE,
+      limit: ADMIN_ACTIVITY_LIMIT,
+    }),
+  };
+}
+
+function serializeActivityRow(row) {
+  return {
+    id: `${row.type}:${row.source_id}`,
+    type: row.type,
+    occurredAt: row.occurred_at instanceof Date
+      ? row.occurred_at.toISOString()
+      : new Date(row.occurred_at).toISOString(),
+    title: row.title,
+    description: row.description,
+  };
+}
+
+export async function listAdminRecentActivity(client, { page = ADMIN_ACTIVITY_PAGE, limit = ADMIN_ACTIVITY_LIMIT } = {}) {
+  const skip = (page - 1) * limit;
+  const [rows, countRows] = await Promise.all([
+    client.$queryRaw`
+      SELECT source_id, type, occurred_at, title, description
+      FROM (
+        SELECT u.id::text AS source_id,
+               'USER_REGISTERED'::text AS type,
+               u.created_at AS occurred_at,
+               'New user registration'::text AS title,
+               (u.full_name || ' registered as ' || replace(u.role::text, '_', ' ')) AS description
+        FROM users u
+        UNION ALL
+        SELECT c.id::text,
+               'COMPANY_REGISTERED'::text,
+               c.created_at,
+               'New company registration'::text,
+               c.company_name
+        FROM companies c
+        UNION ALL
+        SELECT e.id::text,
+               'JOB_PUBLISHED'::text,
+               e.created_at,
+               'Job published'::text,
+               (j.title || ' at ' || c.company_name)
+        FROM job_status_events e
+        JOIN jobs j ON j.id = e.job_id
+        JOIN companies c ON c.id = j.company_id
+        WHERE e.to_status = 'PUBLISHED'
+        UNION ALL
+        SELECT e.id::text,
+               'APPLICATION_SUBMITTED'::text,
+               e.created_at,
+               'Application submitted'::text,
+               (j.title || ' at ' || c.company_name)
+        FROM application_status_events e
+        JOIN applications a ON a.id = e.application_id
+        JOIN jobs j ON j.id = a.job_id
+        JOIN companies c ON c.id = j.company_id
+        WHERE e.to_status = 'SUBMITTED'
+        UNION ALL
+        SELECT e.id::text,
+               'INTERVIEW_INVITED'::text,
+               e.created_at,
+               'Interview invitation'::text,
+               (j.title || ' at ' || c.company_name)
+        FROM interview_events e
+        JOIN interviews i ON i.id = e.interview_id
+        JOIN jobs j ON j.id = i.job_id
+        JOIN companies c ON c.id = j.company_id
+        WHERE e.event_type = 'CREATED'
+        UNION ALL
+        SELECT e.id::text,
+               'OFFER_ISSUED'::text,
+               e.created_at,
+               'Offer issued'::text,
+               (j.title || ' at ' || c.company_name)
+        FROM application_status_events e
+        JOIN applications a ON a.id = e.application_id
+        JOIN jobs j ON j.id = a.job_id
+        JOIN companies c ON c.id = j.company_id
+        WHERE e.to_status = 'OFFERED'
+        UNION ALL
+        SELECT e.id::text,
+               'LEARNING_COURSE_COMPLETED'::text,
+               e.completed_at,
+               'Learning course completion'::text,
+               lc.title
+        FROM learning_enrollments e
+        JOIN learning_contents lc ON lc.id = e.content_id
+        WHERE e.status = 'COMPLETED' AND e.completed_at IS NOT NULL
+      ) activity
+      ORDER BY occurred_at DESC, source_id DESC
+      LIMIT ${limit} OFFSET ${skip}
+    `,
+    client.$queryRaw`
+      SELECT COUNT(*)::int AS n
+      FROM (
+        SELECT u.id FROM users u
+        UNION ALL
+        SELECT c.id FROM companies c
+        UNION ALL
+        SELECT e.id FROM job_status_events e WHERE e.to_status = 'PUBLISHED'
+        UNION ALL
+        SELECT e.id FROM application_status_events e WHERE e.to_status = 'SUBMITTED'
+        UNION ALL
+        SELECT e.id FROM interview_events e WHERE e.event_type = 'CREATED'
+        UNION ALL
+        SELECT e.id FROM application_status_events e WHERE e.to_status = 'OFFERED'
+        UNION ALL
+        SELECT e.id FROM learning_enrollments e
+        WHERE e.status = 'COMPLETED' AND e.completed_at IS NOT NULL
+      ) activity
+    `,
+  ]);
+
+  const total = countRows[0]?.n ?? 0;
+  return {
+    items: rows.map(serializeActivityRow),
+    ...paginationMeta(page, limit, total),
   };
 }
 

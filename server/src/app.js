@@ -4,6 +4,7 @@ import { checkDatabaseConnection } from './db.js';
 import { sessionMiddleware } from './lib/session.js';
 import { doubleCsrfProtection, generateCsrfToken, isCsrfError } from './lib/csrf.js';
 import { apiRateLimit } from './middleware/rateLimit.js';
+import { securityHeaders } from './middleware/securityHeaders.js';
 import { authRouter } from './routes/auth.js';
 import { occupationsRouter } from './routes/occupations.js';
 import { mascoOccupationsRouter } from './routes/mascoOccupations.js';
@@ -18,6 +19,7 @@ import { meCompanyRouter } from './routes/meCompany.js';
 import { adminCompaniesRouter } from './routes/adminCompanies.js';
 import { adminUsersRouter } from './routes/adminUsers.js';
 import {
+  adminActivityRouter,
   adminContentMonitoringRouter,
   adminReportsRouter,
   adminStatsRouter,
@@ -43,6 +45,7 @@ export function createApp(options = {}) {
 
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
+  app.use(securityHeaders);
   app.use(express.json({ limit: '32kb' }));
   app.use(sessionMiddleware);
   app.use(cookieParser());
@@ -87,6 +90,7 @@ export function createApp(options = {}) {
   app.use('/api/me/company', meCompanyRouter);
   app.use('/api/admin/users', adminUsersRouter);
   app.use('/api/admin/stats', adminStatsRouter);
+  app.use('/api/admin/activity', adminActivityRouter);
   app.use('/api/admin/reports', adminReportsRouter);
   app.use('/api/admin/content-monitoring', adminContentMonitoringRouter);
   app.use('/api/admin/companies', adminCompaniesRouter);
@@ -111,7 +115,7 @@ export function createApp(options = {}) {
   }
 
   app.use((req, res) => {
-    res.status(404).json({ error: 'Not found', path: req.path });
+    res.status(404).json({ error: 'Not found' });
   });
 
   app.use((err, req, res, _next) => {

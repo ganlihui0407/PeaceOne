@@ -332,6 +332,38 @@ test('failing then passing an assessment completes the course and records skills
   );
 });
 
+test('course completion does not create duplicate UserSkills or downgrade higher proficiency', async () => {
+  const student = await registerAs('keep-prof');
+  const session = sessionOf(student);
+  const user = await prisma.user.findUnique({ where: { email: student.email } });
+  await prisma.userSkill.create({
+    data: {
+      userId: user.id,
+      skillId: sqlSkill.id,
+      proficiencyLevel: 'Advanced',
+    },
+  });
+
+  await postJson(baseUrl, '/api/me/learning/enrollments', session, { contentId: courseId });
+  await postJson(baseUrl, `/api/me/learning/lessons/${lessonIds[0]}/complete`, session, {});
+  await postJson(baseUrl, `/api/me/learning/lessons/${lessonIds[1]}/complete`, session, {});
+  const pass = await postJson(baseUrl, `/api/me/learning/assessments/${assessmentId}/attempts`, session, {
+    answers: [
+      { questionId: questionIds[0], optionId: 'b' },
+      { questionId: questionIds[1], optionId: 'a' },
+      { questionId: questionIds[2], optionId: 'a' },
+    ],
+  });
+  assert.equal(pass.response.status, 201, pass.text);
+  assert.equal(pass.json.courseCompleted, true);
+
+  const skills = await prisma.userSkill.findMany({
+    where: { userId: user.id, skillId: sqlSkill.id },
+  });
+  assert.equal(skills.length, 1);
+  assert.equal(skills[0].proficiencyLevel, 'Advanced');
+});
+
 test('a student cannot complete another student lesson or read their enrolment list as theirs', async () => {
   const owner = await registerAs('owner');
   const stranger = await registerAs('stranger');

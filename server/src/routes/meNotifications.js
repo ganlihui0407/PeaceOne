@@ -5,10 +5,12 @@ import {
   countOwnedUnreadNotifications,
   emptyNotificationBodySchema,
   listOwnedNotifications,
+  listOwnedRelatedNotifications,
   markAllOwnedNotificationsRead,
   markOwnedNotificationRead,
   notificationIdParamsSchema,
   notificationListQuerySchema,
+  relatedNotificationQuerySchema,
 } from '../lib/notificationQuery.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/requireAuth.js';
@@ -31,6 +33,15 @@ meNotificationsRouter.get(
   validateQuery(notificationListQuerySchema),
   asyncHandler(async (req, res) => {
     const payload = await listOwnedNotifications(prisma, req.user.id, req.validatedQuery);
+    res.status(200).json(payload);
+  }),
+);
+
+meNotificationsRouter.get(
+  '/related',
+  validateQuery(relatedNotificationQuerySchema),
+  asyncHandler(async (req, res) => {
+    const payload = await listOwnedRelatedNotifications(prisma, req.user.id, req.validatedQuery);
     res.status(200).json(payload);
   }),
 );

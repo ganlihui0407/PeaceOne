@@ -11,13 +11,16 @@ export const registerSchema = z
     currentPosition: z.string().optional(),
     terms: z.literal(true),
   })
+  .strict()
   .refine((data) => data.password === data.confirmPassword, {
     path: ['confirmPassword'],
     message: 'Passwords do not match',
   });
 
-export const loginSchema = z.object({
-  email: z.email().max(254),
-  password: z.string().min(1).max(72),
-  rememberMe: z.boolean().optional(),
-});
+export const loginSchema = z
+  .object({
+    email: z.email().max(254),
+    password: z.string().min(1).max(72),
+    rememberMe: z.boolean().optional(),
+  })
+  .strict();

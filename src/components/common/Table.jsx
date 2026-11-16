@@ -10,6 +10,7 @@ function Table({ headers = [], rows = [], className = '', minWidthClass = 'min-w
             {headers.map((header) => (
               <th
                 key={header}
+                scope="col"
                 className="border-b border-line px-4 py-3 text-xs font-semibold tracking-wide text-muted uppercase"
               >
                 {header}

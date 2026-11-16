@@ -15,6 +15,28 @@ import {
   seedRecruitmentDataset,
 } from '../src/lib/recruitmentDatasetSeed.js';
 
+const CATALOG_APPLICATIONS = DATASET_APPLICATIONS.length;
+
+function assertCatalogCoverage(integrity, label) {
+  assert.equal(integrity.database, 'peaceone_test', label);
+  assert.equal(integrity.catalog.expected, CATALOG_APPLICATIONS, label);
+  assert.equal(integrity.catalog.present, CATALOG_APPLICATIONS, `${label}: every catalogue pair must exist`);
+  assert.ok(
+    integrity.totals.applications >= CATALOG_APPLICATIONS,
+    `${label}: candidate applications ${integrity.totals.applications} must cover the ${CATALOG_APPLICATIONS} catalogue pairs`,
+  );
+  assert.equal(
+    integrity.totals.applications,
+    CATALOG_APPLICATIONS + integrity.catalog.additional,
+    `${label}: additional walkthrough applications are counted separately from the catalogue`,
+  );
+  assert.equal(
+    integrity.totals.snapshots,
+    integrity.totals.applications,
+    `${label}: every stored application, including extras, keeps a resume snapshot`,
+  );
+}
+
 let firstSeed;
 let secondSeed;
 
@@ -48,13 +70,11 @@ test('catalogue targets five companies, ten jobs, fifteen candidates and twenty-
   assert.equal(new Set(emails).size, emails.length);
 });
 
-test('seed writes the isolated recruitment totals without inventing ESCO skills', async () => {
-  assert.equal(firstSeed.integrity.database, 'peaceone_test');
+test('seed writes the isolated recruitment catalogue without inventing ESCO skills', async () => {
+  assertCatalogCoverage(firstSeed.integrity, 'first seed');
   assert.equal(firstSeed.integrity.totals.companies, 5);
   assert.equal(firstSeed.integrity.totals.jobs, 10);
   assert.equal(firstSeed.integrity.totals.candidates, 15);
-  assert.equal(firstSeed.integrity.totals.applications, 25);
-  assert.equal(firstSeed.integrity.totals.snapshots, 25);
   assert.ok(firstSeed.integrity.totals.interviews >= 5);
   assert.ok(firstSeed.mappings.length >= 10);
   assert.equal(firstSeed.integrity.duplicates.applications, 0);
@@ -78,7 +98,7 @@ test('second seed is idempotent and does not overwrite protected demo accounts',
   assert.equal(secondSeed.counts.applicationsCreated, 0);
   assert.equal(secondSeed.counts.interviewsCreated, 0);
   assert.equal(secondSeed.counts.resumesCreated, 0);
-  assert.equal(secondSeed.integrity.totals.applications, 25);
+  assertCatalogCoverage(secondSeed.integrity, 'second seed');
 
   const names = Object.fromEntries(
     (await prisma.user.findMany({
@@ -90,6 +110,32 @@ test('second seed is idempotent and does not overwrite protected demo accounts',
   assert.equal(names['graduate@peaceone.demo'], 'Tan Wei Jie');
 
   const integrity = await collectRecruitmentIntegrity(prisma);
+  assertCatalogCoverage(integrity, 'post-seed integrity');
   assert.equal(integrity.totals.companies, 5);
   assert.equal(integrity.protectedUsers.length, 5);
+});
+
+test('dataset jobs stay company-owned and published; extra applications do not break uniqueness', async () => {
+  const connected = await prisma.$queryRaw`SELECT current_database()::text AS name`;
+  assert.equal(connected[0].name, 'peaceone_test');
+
+  const registrations = DATASET_COMPANIES.map((company) => company.registrationNumber);
+  const jobs = await prisma.job.findMany({
+    where: { company: { registrationNumber: { in: registrations } } },
+    select: {
+      title: true,
+      status: true,
+      company: { select: { registrationNumber: true } },
+    },
+  });
+  assert.equal(jobs.length, 10);
+  assert.equal(jobs.every((job) => job.status === 'PUBLISHED'), true);
+  const titlesByCompany = jobs.map((job) => `${job.company.registrationNumber}::${job.title}`);
+  assert.equal(new Set(titlesByCompany).size, titlesByCompany.length);
+
+  const integrity = await collectRecruitmentIntegrity(prisma);
+  assert.equal(integrity.duplicates.applications, 0);
+  assert.ok(integrity.catalog.additional >= 0);
+  assert.equal(integrity.orphans.missingSnapshots, 0);
+  assert.equal(integrity.orphans.interviewMismatches, 0);
 });

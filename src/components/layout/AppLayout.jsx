@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Sidebar from './Sidebar.jsx'
+import SkipLink from './SkipLink.jsx'
 import TopHeader from './TopHeader.jsx'
 
 function AppLayout({
@@ -16,6 +17,7 @@ function AppLayout({
 
   return (
     <div className="min-h-screen bg-page">
+      <SkipLink />
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -34,7 +36,7 @@ function AppLayout({
           notificationTo={notificationTo}
           onMenuClick={() => setSidebarOpen(true)}
         />
-        <main className="min-w-0">{children}</main>
+        <main id="main-content" tabIndex={-1} className="min-w-0">{children}</main>
       </div>
     </div>
   )

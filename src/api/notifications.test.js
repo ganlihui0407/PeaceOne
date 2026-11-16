@@ -13,6 +13,7 @@ import {
   NOTIFICATIONS_UNAVAILABLE,
   RELATED_RECORD_UNAVAILABLE,
   fetchNotifications,
+  fetchRelatedNotifications,
   fetchUnreadNotificationCount,
   formatUnreadBadge,
   isNotificationId,
@@ -136,15 +137,20 @@ test('fetchNotifications and unread count use session APIs without recipient ids
     if (path === '/api/me/notifications/unread-count') {
       return jsonResponse(200, { unreadCount: 4 })
     }
+    if (path === `/api/me/notifications/related?applicationId=${APPLICATION_ID}&page=1&limit=20`) {
+      return jsonResponse(200, pagePayload([notificationPayload()], { page: 1, limit: 20, total: 1, totalPages: 1 }))
+    }
     throw new Error(`unexpected ${path}`)
   }
 
   const unreadPage = await fetchNotifications({ unread: true, page: 2, limit: NOTIFICATION_LIST_LIMIT })
   const recent = await fetchNotifications({ page: 1, limit: NOTIFICATION_DROPDOWN_LIMIT })
   const count = await fetchUnreadNotificationCount()
+  const related = await fetchRelatedNotifications({ applicationId: APPLICATION_ID, page: 1, limit: 20 })
   assert.equal(unreadPage.total, 0)
   assert.equal(recent.items.length, 1)
   assert.equal(count.unreadCount, 4)
+  assert.equal(related.items[0].relatedEntityId, APPLICATION_ID)
   assert.equal(parseUnreadCount({ unreadCount: 0 }).unreadCount, 0)
   assert.equal(parseNotificationPage(pagePayload([])).items.length, 0)
   for (const call of calls) {
@@ -266,6 +272,8 @@ test('notification UI is live, reusable across roles, and has no mock fallback',
   const adminLayout = readFileSync(fileURLToPath(new URL('../components/layout/AdminLayout.jsx', import.meta.url)), 'utf8')
 
   assert.equal(api.includes('recipientUserId'), false)
+  assert.equal(api.includes('fetchRelatedNotifications'), true)
+  assert.equal(api.includes('/api/me/notifications/related'), true)
   assert.equal(api.includes('setInterval'), false)
   assert.equal(bell.includes('fetchUnreadNotificationCount'), true)
   assert.equal(bell.includes('formatUnreadBadge'), true)

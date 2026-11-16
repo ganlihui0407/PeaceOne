@@ -65,7 +65,7 @@ function SkillTopicCard({ topic, onFindCourses }) {
         ))}
       </ul>
       <div className="mt-5">
-        <Button size="sm" variant="secondary" onClick={() => onFindCourses(topic)}>
+        <Button size="sm" onClick={() => onFindCourses(topic)}>
           Find Related Courses
         </Button>
       </div>
@@ -110,10 +110,10 @@ function CourseCatalogue({ basePath }) {
   }
 
   return (
-    <section id="peaceone-course-catalogue" className="mt-12 space-y-8">
+    <section id="peaceone-course-catalogue" className="mt-12 space-y-8 scroll-mt-24">
       <SectionHeader
-        title="PeaceOne course catalogue"
-        description="Published demonstration courses stored in PostgreSQL. They are original PeaceOne teaching materials, not vendor certificates. Enrolment and progress are saved to your account."
+        title="Published PeaceOne courses"
+        description="This PeaceOne course catalogue is separate from the ESCO skill recommendations above. Only published courses with stored LearningContentSkill links are listed. Enrolment and progress are saved to your account."
       />
 
       {recommended?.courses?.length ? (
@@ -332,7 +332,7 @@ function LearningRecommendationsPage({ basePath }) {
   return (
     <PageContent
       title="Learning"
-      description="Use ESCO skill-development topics for your saved career target, then enrol in published PeaceOne courses. Course progress is stored in PostgreSQL."
+      description="Use ESCO skill recommendations for your saved career target, then enrol in published PeaceOne courses. Course progress is stored in PostgreSQL."
       actions={
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" to={`${basePath}/learning/progress`}>
@@ -346,9 +346,14 @@ function LearningRecommendationsPage({ basePath }) {
     >
       <section>
         <SectionHeader
-          title="ESCO skill development"
-          description="Essential and optional skills come from official occupation-skill relationships. Recorded means the skill is in your PeaceOne list. It is not a competence score."
+          title="ESCO skill recommendations"
+          description="Essential and optional skills come from official occupation-skill relationships. Recorded means the skill is in your PeaceOne list. It is not a competence score. These topics are not courses."
         />
+        <p className="po-secondary mb-6">
+          <a href="#peaceone-course-catalogue" className="text-sm font-medium text-primary">
+            Skip to published PeaceOne courses
+          </a>
+        </p>
         <QueryStatus
           loading={loading}
           error={error}

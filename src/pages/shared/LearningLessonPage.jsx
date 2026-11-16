@@ -128,20 +128,20 @@ function LearningLessonView({ basePath, contentId, lessonId }) {
             </Card>
 
             {sections.length === 0 ? (
-              <Card>
-                <p className="po-secondary whitespace-pre-wrap">{lesson.body}</p>
+              <Card className="mx-auto max-w-3xl">
+                <p className="po-secondary whitespace-pre-wrap leading-7">{lesson.body}</p>
               </Card>
             ) : (
               sections.map((section) => (
-                <Card key={section.title}>
+                <Card key={section.title} className="mx-auto max-w-3xl">
                   <h2 className="po-section-title">{section.title}</h2>
-                  <div className="po-secondary mt-4 whitespace-pre-wrap">{section.text}</div>
+                  <div className="po-secondary mt-4 whitespace-pre-wrap leading-7">{section.text}</div>
                 </Card>
               ))
             )}
 
             <Card>
-              <div className="flex flex-wrap gap-2">
+              <nav aria-label="Lesson navigation" className="flex flex-wrap gap-2">
                 {lesson.completed ? (
                   <Badge status="success" className="normal-case">Already completed</Badge>
                 ) : (
@@ -152,22 +152,24 @@ function LearningLessonView({ basePath, contentId, lessonId }) {
                 <Button
                   variant="secondary"
                   disabled={!neighbors.previous}
+                  aria-label={neighbors.previous ? `Previous lesson: ${neighbors.previous.title}` : 'Previous lesson unavailable'}
                   to={neighbors.previous ? learningLessonPath(basePath, contentId, neighbors.previous.id) : undefined}
                 >
-                  Previous
+                  Previous lesson
                 </Button>
                 <Button
                   disabled={!neighbors.next}
+                  aria-label={neighbors.next ? `Next lesson: ${neighbors.next.title}` : 'Next lesson unavailable'}
                   to={neighbors.next ? learningLessonPath(basePath, contentId, neighbors.next.id) : undefined}
                 >
-                  Next Lesson
+                  Next lesson
                 </Button>
                 {!neighbors.next && assessments[0] ? (
                   <Button variant="secondary" to={learningAssessmentPath(basePath, contentId, assessments[0].id)}>
-                    Assessment
+                    Go to assessment
                   </Button>
                 ) : null}
-              </div>
+              </nav>
               <p className="po-helper mt-4">
                 Completion is saved in PostgreSQL. Refreshing or signing in again keeps this lesson state. Completing a lesson does not award UserSkills by itself.
               </p>

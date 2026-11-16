@@ -62,8 +62,6 @@ async function loginAs(email) {
   const result = await postJson(baseUrl, '/api/auth/login', primed, {
     email,
     password: TEST_PASSWORD,
-    role: 'ADMIN',
-    demoRole: 'ADMIN',
   });
   assert.equal(result.response.status, 200, result.text);
   return result;
@@ -177,11 +175,17 @@ test('client-supplied role values cannot grant permissions', async () => {
   });
   assert.equal(stored.role, 'STUDENT');
 
-  const login = await postJson(baseUrl, '/api/auth/login', await primeCsrf(baseUrl), {
+  const spoofedLogin = await postJson(baseUrl, '/api/auth/login', await primeCsrf(baseUrl), {
     email: student.json.user.email,
     password: TEST_PASSWORD,
     role: 'ADMIN',
     currentPosition: 'admin',
+  });
+  assert.equal(spoofedLogin.response.status, 400);
+
+  const login = await postJson(baseUrl, '/api/auth/login', await primeCsrf(baseUrl), {
+    email: student.json.user.email,
+    password: TEST_PASSWORD,
   });
   assert.equal(login.response.status, 200);
   assert.equal(login.json.user.role, 'STUDENT');

@@ -1,74 +1,85 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import PublicLayout from './components/layout/PublicLayout.jsx'
 import CandidateLayout from './components/layout/CandidateLayout.jsx'
 import EmployerLayout from './components/layout/EmployerLayout.jsx'
 import AdminLayout from './components/layout/AdminLayout.jsx'
-import Home from './pages/public/Home.jsx'
-import Jobs from './pages/public/Jobs.jsx'
-import JobDetail from './pages/public/JobDetail.jsx'
-import Learning from './pages/public/Learning.jsx'
-import CourseDetail from './pages/public/CourseDetail.jsx'
-import About from './pages/public/About.jsx'
-import Login from './pages/public/Login.jsx'
-import Register from './pages/public/Register.jsx'
-import StudentDashboard from './pages/student/Dashboard.jsx'
-import JobSeekerDashboard from './pages/jobseeker/Dashboard.jsx'
-import EmployerDashboard from './pages/employer/Dashboard.jsx'
-import CompanyProfile from './pages/employer/CompanyProfile.jsx'
-import StaffProfile from './pages/employer/StaffProfile.jsx'
-import ManageJobs from './pages/employer/ManageJobs.jsx'
-import JobPostingFormPage from './pages/employer/JobPostingFormPage.jsx'
-import JobPostingDetails from './pages/employer/JobPostingDetails.jsx'
-import Applicants from './pages/employer/Applicants.jsx'
-import ApplicantDetails from './pages/employer/ApplicantDetails.jsx'
-import EmployerInterviews from './pages/employer/Interviews.jsx'
-import InterviewFormPage from './pages/employer/InterviewFormPage.jsx'
-import EmployerInterviewDetails from './pages/employer/InterviewDetails.jsx'
-import AdminDashboard from './pages/admin/Dashboard.jsx'
-import AdminUsers from './pages/admin/Users.jsx'
-import AdminUserDetails from './pages/admin/UserDetails.jsx'
-import AdminCompanies from './pages/admin/Companies.jsx'
-import AdminCompanyDetails from './pages/admin/CompanyDetails.jsx'
-import AdminJobMonitoring from './pages/admin/JobMonitoring.jsx'
-import AdminJobModeration from './pages/admin/JobModeration.jsx'
-import AdminLearningManagement from './pages/admin/LearningManagement.jsx'
-import AdminLearningContentForm from './pages/admin/LearningContentForm.jsx'
-import AdminContentMonitoring from './pages/admin/ContentMonitoring.jsx'
-import AdminReports from './pages/admin/Reports.jsx'
-import AdminMascoOccupations from './pages/admin/MascoOccupations.jsx'
-import AdminMascoOccupationDetails from './pages/admin/MascoOccupationDetails.jsx'
-import AdminMascoCrosswalks from './pages/admin/MascoCrosswalks.jsx'
-import AdminProfile from './pages/admin/Profile.jsx'
-import AdminPositionChangeRequests from './pages/admin/PositionChangeRequests.jsx'
-import AdminPositionChangeRequestDetails from './pages/admin/PositionChangeRequestDetails.jsx'
-import ProfilePage from './pages/shared/ProfilePage.jsx'
-import NotificationsPage from './pages/shared/NotificationsPage.jsx'
-import SkillsPage from './pages/shared/SkillsPage.jsx'
-import ResumePage from './pages/shared/ResumePage.jsx'
-import ResumeEditorPage from './pages/shared/ResumeEditorPage.jsx'
-import CareerTargetPage from './pages/shared/CareerTargetPage.jsx'
-import SkillGapPage from './pages/shared/SkillGapPage.jsx'
-import LearningRecommendationsPage from './pages/shared/LearningRecommendationsPage.jsx'
-import LearningDetailPage from './pages/shared/LearningDetailPage.jsx'
-import LearningLessonPage from './pages/shared/LearningLessonPage.jsx'
-import LearningAssessmentPage from './pages/shared/LearningAssessmentPage.jsx'
-import LearningProgressPage from './pages/shared/LearningProgressPage.jsx'
-import CandidateJobsPage from './pages/shared/CandidateJobsPage.jsx'
-import CandidateJobDetailPage from './pages/shared/CandidateJobDetailPage.jsx'
-import ApplyPage from './pages/shared/ApplyPage.jsx'
-import ApplicationsPage from './pages/shared/ApplicationsPage.jsx'
-import ApplicationDetailPage from './pages/shared/ApplicationDetailPage.jsx'
-import InterviewsPage from './pages/shared/InterviewsPage.jsx'
-import InterviewDetailsPage from './pages/shared/InterviewDetailsPage.jsx'
-import SettingsPage from './pages/shared/SettingsPage.jsx'
-import DesignSystem from './pages/DesignSystem.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
 import { RequireAuth } from './auth/RequireAuth.jsx'
+
+const Home = lazy(() => import('./pages/public/Home.jsx'))
+const Jobs = lazy(() => import('./pages/public/Jobs.jsx'))
+const JobDetail = lazy(() => import('./pages/public/JobDetail.jsx'))
+const Learning = lazy(() => import('./pages/public/Learning.jsx'))
+const CourseDetail = lazy(() => import('./pages/public/CourseDetail.jsx'))
+const About = lazy(() => import('./pages/public/About.jsx'))
+const Login = lazy(() => import('./pages/public/Login.jsx'))
+const Register = lazy(() => import('./pages/public/Register.jsx'))
+const StudentDashboard = lazy(() => import('./pages/student/Dashboard.jsx'))
+const JobSeekerDashboard = lazy(() => import('./pages/jobseeker/Dashboard.jsx'))
+const EmployerDashboard = lazy(() => import('./pages/employer/Dashboard.jsx'))
+const CompanyProfile = lazy(() => import('./pages/employer/CompanyProfile.jsx'))
+const StaffProfile = lazy(() => import('./pages/employer/StaffProfile.jsx'))
+const ManageJobs = lazy(() => import('./pages/employer/ManageJobs.jsx'))
+const JobPostingFormPage = lazy(() => import('./pages/employer/JobPostingFormPage.jsx'))
+const JobPostingDetails = lazy(() => import('./pages/employer/JobPostingDetails.jsx'))
+const Applicants = lazy(() => import('./pages/employer/Applicants.jsx'))
+const ApplicantDetails = lazy(() => import('./pages/employer/ApplicantDetails.jsx'))
+const EmployerInterviews = lazy(() => import('./pages/employer/Interviews.jsx'))
+const InterviewFormPage = lazy(() => import('./pages/employer/InterviewFormPage.jsx'))
+const EmployerInterviewDetails = lazy(() => import('./pages/employer/InterviewDetails.jsx'))
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'))
+const AdminUsers = lazy(() => import('./pages/admin/Users.jsx'))
+const AdminUserDetails = lazy(() => import('./pages/admin/UserDetails.jsx'))
+const AdminCompanies = lazy(() => import('./pages/admin/Companies.jsx'))
+const AdminCompanyDetails = lazy(() => import('./pages/admin/CompanyDetails.jsx'))
+const AdminJobMonitoring = lazy(() => import('./pages/admin/JobMonitoring.jsx'))
+const AdminJobModeration = lazy(() => import('./pages/admin/JobModeration.jsx'))
+const AdminLearningManagement = lazy(() => import('./pages/admin/LearningManagement.jsx'))
+const AdminLearningContentForm = lazy(() => import('./pages/admin/LearningContentForm.jsx'))
+const AdminContentMonitoring = lazy(() => import('./pages/admin/ContentMonitoring.jsx'))
+const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'))
+const AdminMascoOccupations = lazy(() => import('./pages/admin/MascoOccupations.jsx'))
+const AdminMascoOccupationDetails = lazy(() => import('./pages/admin/MascoOccupationDetails.jsx'))
+const AdminMascoCrosswalks = lazy(() => import('./pages/admin/MascoCrosswalks.jsx'))
+const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'))
+const AdminPositionChangeRequests = lazy(() => import('./pages/admin/PositionChangeRequests.jsx'))
+const AdminPositionChangeRequestDetails = lazy(() => import('./pages/admin/PositionChangeRequestDetails.jsx'))
+const ProfilePage = lazy(() => import('./pages/shared/ProfilePage.jsx'))
+const NotificationsPage = lazy(() => import('./pages/shared/NotificationsPage.jsx'))
+const SkillsPage = lazy(() => import('./pages/shared/SkillsPage.jsx'))
+const ResumePage = lazy(() => import('./pages/shared/ResumePage.jsx'))
+const ResumeEditorPage = lazy(() => import('./pages/shared/ResumeEditorPage.jsx'))
+const CareerTargetPage = lazy(() => import('./pages/shared/CareerTargetPage.jsx'))
+const SkillGapPage = lazy(() => import('./pages/shared/SkillGapPage.jsx'))
+const LearningRecommendationsPage = lazy(() => import('./pages/shared/LearningRecommendationsPage.jsx'))
+const LearningDetailPage = lazy(() => import('./pages/shared/LearningDetailPage.jsx'))
+const LearningLessonPage = lazy(() => import('./pages/shared/LearningLessonPage.jsx'))
+const LearningAssessmentPage = lazy(() => import('./pages/shared/LearningAssessmentPage.jsx'))
+const LearningProgressPage = lazy(() => import('./pages/shared/LearningProgressPage.jsx'))
+const CandidateJobsPage = lazy(() => import('./pages/shared/CandidateJobsPage.jsx'))
+const CandidateJobDetailPage = lazy(() => import('./pages/shared/CandidateJobDetailPage.jsx'))
+const ApplyPage = lazy(() => import('./pages/shared/ApplyPage.jsx'))
+const ApplicationsPage = lazy(() => import('./pages/shared/ApplicationsPage.jsx'))
+const ApplicationDetailPage = lazy(() => import('./pages/shared/ApplicationDetailPage.jsx'))
+const InterviewsPage = lazy(() => import('./pages/shared/InterviewsPage.jsx'))
+const InterviewDetailsPage = lazy(() => import('./pages/shared/InterviewDetailsPage.jsx'))
+const SettingsPage = lazy(() => import('./pages/shared/SettingsPage.jsx'))
+const DesignSystem = lazy(() => import('./pages/DesignSystem.jsx'))
+
+function PageFallback() {
+  return (
+    <div className="px-4 py-16 text-center text-sm text-muted" role="status">
+      Loading page…
+    </div>
+  )
+}
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+      <Suspense fallback={<PageFallback />}>
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
@@ -200,6 +211,7 @@ function App() {
 
         <Route path="/design-system" element={<DesignSystem />} />
       </Routes>
+      </Suspense>
       </AuthProvider>
     </BrowserRouter>
   )

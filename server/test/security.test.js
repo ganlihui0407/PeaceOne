@@ -127,6 +127,18 @@ test('malformed and oversized bodies are rejected without leaking details', asyn
   assert.equal(oversizedBody.error, 'Request too large');
   assert.equal(JSON.stringify(oversizedBody).includes('x'.repeat(50)), false);
 
+  const extraRegister = await postJson(
+    baseUrl,
+    '/api/auth/register',
+    await primeCsrf(baseUrl),
+    validRegisterBody(uniqueEmail(createdEmails, TEST_EMAIL_PREFIX, 'mass'), {
+      companyId: 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',
+      role: 'student-jobseeker',
+    }),
+  );
+  assert.equal(extraRegister.response.status, 400);
+  assert.equal(extraRegister.json.error, 'Invalid request');
+
   const tooLongName = await postJson(
     baseUrl,
     '/api/auth/register',
@@ -157,6 +169,36 @@ test('malformed and oversized bodies are rejected without leaking details', asyn
     }),
   );
   assert.equal(objectRole.response.status, 400);
+});
+
+test('login rejects extra fields, injection-like emails and does not leak internals', async () => {
+  const extra = await postJson(baseUrl, '/api/auth/login', await primeCsrf(baseUrl), {
+    email: uniqueEmail(createdEmails, TEST_EMAIL_PREFIX, 'extra'),
+    password: 'ValidPass1',
+    role: 'ADMIN',
+    companyId: 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',
+  });
+  assert.equal(extra.response.status, 400);
+  assert.equal(extra.json.error, 'Invalid request');
+  assertNoSecrets(extra.json);
+
+  const injection = await postJson(baseUrl, '/api/auth/login', await primeCsrf(baseUrl), {
+    email: "' OR 1=1 --@peaceone.test",
+    password: 'ValidPass1',
+  });
+  assert.equal(injection.response.status, 400);
+  assert.equal(injection.json.error, 'Invalid request');
+  assertNoSecrets(injection.json);
+
+  const health = await fetch(`${baseUrl}/api/health`);
+  assert.equal(health.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(health.headers.get('x-frame-options'), 'DENY');
+
+  const missing = await fetch(`${baseUrl}/api/does-not-exist`);
+  const missingBody = await missing.json();
+  assert.equal(missing.status, 404);
+  assert.equal(missingBody.error, 'Not found');
+  assert.equal(missingBody.path, undefined);
 });
 
 test('auth responses omit hashes, session identifiers and credential names', async () => {

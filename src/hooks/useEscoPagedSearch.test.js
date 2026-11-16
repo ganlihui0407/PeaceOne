@@ -8,8 +8,11 @@ test('paged search resets to page 1 when extra filter params change', () => {
   assert.equal(source.includes('extraKeyRef'), true)
   assert.equal(source.includes('setPage(1)'), true)
   assert.equal(source.includes('if (extraKeyRef.current !== extraKey)'), true)
-  assert.equal(source.includes('if (page !== 1)'), true)
+  assert.equal(source.includes('if (!pageIsControlled && page !== 1)'), true)
   assert.equal(source.includes('seqRef'), true)
+  assert.equal(source.includes('appliedQuery'), true)
+  assert.equal(source.includes('appliedPage'), true)
+  assert.equal(source.includes('pageIsControlled'), true)
 })
 
 test('workspace header no longer renders an inert global search field', () => {

@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
 import Badge from '../../components/common/Badge.jsx'
 import Button from '../../components/common/Button.jsx'
 import EmptyState from '../../components/common/EmptyState.jsx'
+import PaginationBar from '../../components/common/PaginationBar.jsx'
+import QueryStatus from '../../components/common/QueryStatus.jsx'
 import Table from '../../components/common/Table.jsx'
 import Card from '../../components/cards/Card.jsx'
 import SectionHeader from '../../components/ui/SectionHeader.jsx'
@@ -31,6 +34,9 @@ import {
   formatInterviewWhen,
   interviewStatusTone,
 } from '../../api/interviews.js'
+import { fetchAdminRecentActivity, userFacingAdminPlatformError } from '../../api/adminPlatform.js'
+import { isAbortError } from '../../api/esco.js'
+import { formatNotificationTime } from '../../api/notifications.js'
 
 export function StaffProfileHighlights({ highlights, profileTo }) {
   if (highlights.length === 0) {
@@ -338,6 +344,8 @@ export function AdminPlatformStatsSection({ stats }) {
     { label: 'Total jobs', value: jobs.total ?? 0, to: '/admin/jobs' },
     { label: 'Published jobs', value: jobs.published ?? 0, to: '/admin/jobs' },
     { label: 'Draft jobs', value: jobs.draft ?? 0, to: '/admin/jobs' },
+    { label: 'Total applications', value: stats?.applications?.total ?? 0, to: '/admin/reports' },
+    { label: 'Interviews', value: stats?.interviews?.total ?? 0, to: '/admin/reports' },
     { label: 'Offers issued', value: stats?.applications?.byStatus?.OFFERED ?? 0, to: '/admin/reports' },
     { label: 'Published courses', value: learning.publishedCourses ?? 0, to: '/admin/learning' },
     { label: 'Learning enrolments', value: learning.enrollments ?? 0, to: '/admin/learning' },
@@ -392,6 +400,70 @@ export function AdminActivityUnavailableSection() {
       <SectionHeader title="Recent activity" />
       <Card>
         <EmptyState title={ADMIN_ACTIVITY_UNAVAILABLE.title} description={ADMIN_ACTIVITY_UNAVAILABLE.description} />
+      </Card>
+    </section>
+  )
+}
+
+export function AdminRecentActivitySection({ activity: initialActivity }) {
+  const [activity, setActivity] = useState(initialActivity)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    setActivity(initialActivity)
+    setError('')
+  }, [initialActivity])
+
+  async function loadPage(nextPage) {
+    setLoading(true)
+    setError('')
+    try {
+      const next = await fetchAdminRecentActivity({ page: nextPage, limit: 10 })
+      setActivity(next)
+    } catch (loadError) {
+      if (!isAbortError(loadError)) {
+        setError(userFacingAdminPlatformError(loadError))
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const items = Array.isArray(activity?.items) ? activity.items : []
+  return (
+    <section className="po-section-block">
+      <SectionHeader title="Recent activity" />
+      <Card>
+        <QueryStatus
+          loading={loading && items.length === 0}
+          error={error}
+          empty={!loading && !error && items.length === 0}
+          loadingLabel="Loading recent activity…"
+          emptyTitle={ADMIN_ACTIVITY_UNAVAILABLE.title}
+          emptyDescription={ADMIN_ACTIVITY_UNAVAILABLE.description}
+          onRetry={() => loadPage(activity?.page || 1)}
+        >
+          <Table
+            minWidthClass="min-w-[640px]"
+            headers={['When', 'Activity', 'Details']}
+            rows={items.map((item) => [
+              formatNotificationTime(item.occurredAt),
+              item.title,
+              item.description,
+            ])}
+            emptyTitle={ADMIN_ACTIVITY_UNAVAILABLE.title}
+          />
+          <PaginationBar
+            page={activity?.page || 1}
+            totalPages={activity?.totalPages || 0}
+            total={activity?.total || 0}
+            noun="events"
+            disabled={loading}
+            onPrevious={() => loadPage(Math.max(1, (activity?.page || 1) - 1))}
+            onNext={() => loadPage((activity?.page || 1) + 1)}
+          />
+        </QueryStatus>
       </Card>
     </section>
   )

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Badge from '../../components/common/Badge.jsx'
 import Button from '../../components/common/Button.jsx'
+import ProgressBar from '../../components/common/ProgressBar.jsx'
 import QueryStatus from '../../components/common/QueryStatus.jsx'
 import Toast from '../../components/common/Toast.jsx'
 import Card from '../../components/cards/Card.jsx'
@@ -149,12 +150,17 @@ function LearningAssessmentView({ basePath, contentId, assessmentId }) {
             {result?.attempt ? (
               <Card>
                 <div className="flex flex-wrap gap-2">
-                  <Badge status={result.attempt.passed ? 'success' : 'default'} className="normal-case">
+                  <Badge tone={result.attempt.passed ? 'success' : 'warning'} className="normal-case">
                     {result.attempt.passed ? 'Passed' : 'Not passed'}
                   </Badge>
                   <Badge className="normal-case">Score {result.attempt.score}%</Badge>
                 </div>
-                <h2 className="po-section-title mt-4">Quiz result</h2>
+                <h2 className="po-section-title mt-4">
+                  {result.attempt.passed ? 'You passed this assessment' : 'This attempt did not meet the pass mark'}
+                </h2>
+                <div className="mt-4 max-w-md">
+                  <ProgressBar value={result.attempt.score} label={`Score ${result.attempt.score} percent`} />
+                </div>
                 <p className="po-secondary mt-3">
                   This score was calculated by the server. Completing a PeaceOne quiz is not professional certification.
                   {result.courseCompleted
@@ -202,6 +208,20 @@ function LearningAssessmentView({ basePath, contentId, assessmentId }) {
                     <p className="po-helper">
                       Question {index + 1} of {questions.length}
                     </p>
+                    <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Question navigation">
+                      {questions.map((question, questionIndex) => (
+                        <Button
+                          key={question.id}
+                          size="sm"
+                          variant={questionIndex === index ? 'primary' : 'secondary'}
+                          aria-current={questionIndex === index ? 'step' : undefined}
+                          aria-label={`Question ${questionIndex + 1}${answers[question.id] ? ', answered' : ', unanswered'}`}
+                          onClick={() => setIndex(questionIndex)}
+                        >
+                          {questionIndex + 1}
+                        </Button>
+                      ))}
+                    </div>
                     <RadioGroup
                       name={current.id}
                       legend={current.prompt}

@@ -5,10 +5,10 @@ import PageContent from '../../components/layout/PageContent.jsx'
 import { greetingForHour } from '../../api/candidateDashboard.js'
 import { useAdminDashboard } from '../../hooks/useStaffAdminDashboard.js'
 import {
-  AdminActivityUnavailableSection,
   AdminApplicationStatsSection,
   AdminInterviewStatsSection,
   AdminPlatformStatsSection,
+  AdminRecentActivitySection,
   AdminShortcutsSection,
 } from '../shared/StaffAdminDashboardPanels.jsx'
 
@@ -47,7 +47,7 @@ function AdminDashboard() {
             <AdminApplicationStatsSection stats={data.applicationStats} />
             <AdminInterviewStatsSection stats={data.interviewStats} />
             <AdminShortcutsSection />
-            <AdminActivityUnavailableSection />
+            <AdminRecentActivitySection activity={data.platformStats?.recentActivity} />
           </>
         ) : null}
       </QueryStatus>

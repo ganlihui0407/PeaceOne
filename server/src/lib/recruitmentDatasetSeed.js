@@ -30,6 +30,21 @@ const TARGETS = {
   applications: 25,
 };
 
+export function catalogApplicationKey(email, registrationNumber, jobTitle) {
+  return `${email}::${registrationNumber}::${jobTitle}`;
+}
+
+export function expectedCatalogApplicationKeys() {
+  const registrations = Object.fromEntries(
+    DATASET_COMPANIES.map((company) => [company.key, company.registrationNumber]),
+  );
+  return DATASET_APPLICATIONS.map((item) => catalogApplicationKey(
+    item.candidateEmail,
+    registrations[item.companyKey],
+    item.jobTitle,
+  ));
+}
+
 export async function assertPeaceoneTestDatabase(prisma) {
   const rows = await prisma.$queryRaw`SELECT current_database()::text AS name`;
   const name = rows[0]?.name;
@@ -531,6 +546,7 @@ export async function collectRecruitmentIntegrity(prisma) {
     interviewMismatches,
     notificationCross,
     statusGroups,
+    storedApplications,
   ] = await Promise.all([
     prisma.$queryRaw`SELECT current_database()::text AS name`,
     prisma.company.count({ where: { registrationNumber: { in: DATASET_COMPANY_REGISTRATIONS } } }),
@@ -617,12 +633,36 @@ export async function collectRecruitmentIntegrity(prisma) {
       where: { applicant: { email: { in: candidateEmails } } },
       _count: { _all: true },
     }),
+    prisma.application.findMany({
+      where: { applicant: { email: { in: candidateEmails } } },
+      select: {
+        applicant: { select: { email: true } },
+        job: {
+          select: {
+            title: true,
+            status: true,
+            company: { select: { registrationNumber: true } },
+          },
+        },
+        snapshot: { select: { id: true } },
+      },
+    }),
   ]);
 
   const statuses = {};
   for (const row of statusGroups) {
     statuses[row.status] = row._count._all;
   }
+
+  const expectedKeys = expectedCatalogApplicationKeys();
+  const expectedKeySet = new Set(expectedKeys);
+  const storedKeys = storedApplications.map((row) => catalogApplicationKey(
+    row.applicant.email,
+    row.job.company.registrationNumber,
+    row.job.title,
+  ));
+  const presentCatalog = storedKeys.filter((key) => expectedKeySet.has(key));
+  const additionalApplications = storedKeys.filter((key) => !expectedKeySet.has(key));
 
   const protectedUsers = await prisma.user.findMany({
     where: { email: { in: PROTECTED_DEMO_EMAILS } },
@@ -643,6 +683,11 @@ export async function collectRecruitmentIntegrity(prisma) {
       resumes,
       snapshots,
       jobSkills,
+    },
+    catalog: {
+      expected: expectedKeys.length,
+      present: new Set(presentCatalog).size,
+      additional: additionalApplications.length,
     },
     statuses,
     duplicates: {

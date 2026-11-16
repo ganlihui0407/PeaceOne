@@ -55,6 +55,12 @@ export const notificationListQuerySchema = z.object({
   limit: limitQuery,
 });
 
+export const relatedNotificationQuerySchema = z.object({
+  applicationId: z.string().regex(UUID_RE),
+  page: pageQuery,
+  limit: limitQuery,
+});
+
 export const notificationIdParamsSchema = z.object({
   id: z.string().regex(UUID_RE),
 });
@@ -370,6 +376,43 @@ export async function notifyInterviewEvent(tx, {
     .filter(Boolean);
 
   return writeNotifications(tx, rows);
+}
+
+export async function listOwnedRelatedNotifications(client, userId, query) {
+  const interviews = await client.interview.findMany({
+    where: { applicationId: query.applicationId },
+    select: { id: true },
+  });
+  const interviewIds = interviews.map((row) => row.id);
+  const where = {
+    recipientUserId: userId,
+    OR: [
+      {
+        relatedEntityType: 'APPLICATION',
+        relatedEntityId: query.applicationId,
+      },
+      ...(interviewIds.length > 0
+        ? [{
+          relatedEntityType: 'INTERVIEW',
+          relatedEntityId: { in: interviewIds },
+        }]
+        : []),
+    ],
+  };
+  const skip = (query.page - 1) * query.limit;
+  const [total, records] = await Promise.all([
+    client.notification.count({ where }),
+    client.notification.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip,
+      take: query.limit,
+    }),
+  ]);
+  return {
+    notifications: records.map(serializeNotification),
+    ...paginationMeta(query.page, query.limit, total),
+  };
 }
 
 export async function listOwnedNotifications(client, userId, query) {

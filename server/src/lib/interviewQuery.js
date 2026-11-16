@@ -122,7 +122,21 @@ const optionalDuration = z.preprocess(
 );
 
 const timezoneSchema = z.string().trim().min(1).max(TIMEZONE_MAX).regex(/^[A-Za-z0-9_+\-/]+$/);
-const meetingLinkSchema = z.string().trim().min(8).max(MEETING_LINK_MAX).refine((value) => /^https?:\/\//i.test(value));
+function isHttpsMeetingLink(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+const meetingLinkSchema = z
+  .string()
+  .trim()
+  .min(8)
+  .max(MEETING_LINK_MAX)
+  .refine((value) => isHttpsMeetingLink(value));
 const optionalMeetingLink = z.preprocess(emptyToNull, z.union([meetingLinkSchema, z.null()]).optional());
 const optionalVenue = z.preprocess(emptyToNull, z.union([z.string().trim().min(1).max(VENUE_MAX), z.null()]).optional());
 

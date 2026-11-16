@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { afterEach, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { fetchCurrentUser } from './auth.js'
 import { ACCOUNT_UNAVAILABLE_ERROR } from '../auth/sessionStatus.js'
 
@@ -28,6 +30,13 @@ test('fetchCurrentUser treats suspended 403 as unavailable and clears authentica
   const result = await fetchCurrentUser()
   assert.equal(result.status, 'unavailable')
   assert.equal(result.user, null)
+})
+
+test('login page does not claim password recovery is available', () => {
+  const login = readFileSync(fileURLToPath(new URL('../pages/public/Login.jsx', import.meta.url)), 'utf8')
+  assert.equal(login.includes('Password recovery is not available in this prototype.'), true)
+  assert.equal(login.includes('/api/auth/reset'), false)
+  assert.equal(login.includes('resetToken'), false)
 })
 
 test('fetchCurrentUser does not treat a Forbidden 403 as logout', async () => {

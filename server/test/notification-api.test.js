@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -326,6 +327,19 @@ function meInterviewAction(session, id, action, body = {}) {
 
 function listNotifications(session, query = '') {
   return requestJson(baseUrl, `/api/me/notifications${query}`, { cookies: session.cookies });
+}
+
+function listRelatedNotifications(session, applicationId, query = '') {
+  const params = new URLSearchParams({ applicationId, page: '1', limit: '20' });
+  if (query) {
+    const extra = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query);
+    for (const [key, value] of extra.entries()) {
+      params.set(key, value);
+    }
+  }
+  return requestJson(baseUrl, `/api/me/notifications/related?${params.toString()}`, {
+    cookies: session.cookies,
+  });
 }
 
 function unreadCount(session) {
@@ -1010,6 +1024,59 @@ test('four-role delivery persists after login and isolates candidates, companies
     { cookies: adminSession.cookies },
   );
   assert.equal(adminCandidateApplication.response.status === 403 || adminCandidateApplication.response.status === 404, true);
+});
+
+test('related notifications query the recipient inbox by application without first-page truncation', async () => {
+  const company = await seedPublishedJob('related');
+  const candidate = await seedCandidateResume('related-cand');
+  const other = await seedCandidateResume('related-other');
+  const applied = await apply(candidate.session, company.job.id, { resumeId: candidate.resume.id });
+  assert.equal(applied.response.status, 201, applied.text);
+  const applicationId = applied.json.application.id;
+  const fillerIds = [];
+  for (let index = 0; index < 25; index += 1) {
+    fillerIds.push(randomUUID());
+  }
+  await writeNotifications(
+    prisma,
+    fillerIds.map((id, index) => ({
+      recipientUserId: candidate.candidate.json.user.id,
+      actorUserId: candidate.candidate.json.user.id,
+      type: 'APPLICATION_SUBMITTED',
+      title: `Filler ${index}`,
+      message: 'Unrelated stored notification used to fill earlier pages.',
+      relatedEntityType: 'APPLICATION',
+      relatedEntityId: id,
+      deduplicationKey: `APPLICATION_SUBMITTED:${id}:${candidate.candidate.json.user.id}`,
+    })),
+  );
+
+  const firstPage = await listNotifications(candidate.session, '?page=1&limit=20');
+  assert.equal(firstPage.response.status, 200, firstPage.text);
+  assert.equal(
+    firstPage.json.notifications.some((item) => item.relatedEntityId === applicationId),
+    false,
+  );
+
+  const related = await listRelatedNotifications(candidate.session, applicationId);
+  assert.equal(related.response.status, 200, related.text);
+  assert.equal(related.json.notifications.length, 1);
+  assert.equal(related.json.notifications[0].relatedEntityId, applicationId);
+  assert.equal(related.json.notifications[0].type, 'APPLICATION_SUBMITTED');
+  assertPayloadSafe(related.json);
+
+  const stranger = await listRelatedNotifications(other.session, applicationId);
+  assert.equal(stranger.response.status, 200, stranger.text);
+  assert.equal(stranger.json.notifications.length, 0);
+
+  const staffRelated = await listRelatedNotifications(company.staffSession, applicationId);
+  assert.equal(staffRelated.response.status, 200, staffRelated.text);
+  assert.equal(staffRelated.json.notifications.length, 1);
+  assert.equal(staffRelated.json.notifications[0].relatedEntityType, 'APPLICATION');
+  assert.equal(JSON.stringify(staffRelated.json).includes(REVIEW_NOTE), false);
+
+  const missing = await listRelatedNotifications(candidate.session, 'not-a-uuid');
+  assert.equal(missing.response.status, 400);
 });
 
 test('suspended accounts cannot read notifications and extra identity fields are ignored', async () => {

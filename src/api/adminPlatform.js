@@ -1,6 +1,6 @@
 import { ACCOUNT_UNAVAILABLE_ERROR, ACCOUNT_UNAVAILABLE_MESSAGE } from '../auth/sessionStatus.js'
 import { ApiError, apiRequest } from './client.js'
-import { isAbortError } from './esco.js'
+import { buildSearchParams, isAbortError } from './esco.js'
 
 export const ADMIN_PLATFORM_UNAVAILABLE = 'Administrator statistics are unavailable right now.'
 
@@ -53,4 +53,27 @@ export async function fetchAdminReports({ signal } = {}) {
 
 export async function fetchAdminContentMonitoring({ signal } = {}) {
   return requireObject(await requestAdminPlatform('/api/admin/content-monitoring', { signal }))
+}
+
+function requireInteger(value, fallback = ADMIN_PLATFORM_UNAVAILABLE) {
+  if (!Number.isInteger(value)) {
+    throw new ApiError(fallback, 500)
+  }
+  return value
+}
+
+export async function fetchAdminRecentActivity({ page = 1, limit = 10, signal } = {}) {
+  const payload = requireObject(
+    await requestAdminPlatform(`/api/admin/activity${buildSearchParams({ page, limit })}`, { signal }),
+  )
+  if (!Array.isArray(payload.items)) {
+    throw new ApiError(ADMIN_PLATFORM_UNAVAILABLE, 500)
+  }
+  return {
+    items: payload.items,
+    page: requireInteger(payload.page),
+    limit: requireInteger(payload.limit),
+    total: requireInteger(payload.total),
+    totalPages: requireInteger(payload.totalPages),
+  }
 }

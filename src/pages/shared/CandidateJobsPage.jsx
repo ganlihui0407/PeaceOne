@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Button from '../../components/common/Button.jsx'
 import Badge from '../../components/common/Badge.jsx'
@@ -26,6 +26,7 @@ import {
 } from '../../api/jobSkillMatch.js'
 import { useEscoPagedSearch } from '../../hooks/useEscoPagedSearch.js'
 import { useRecordedSkills } from '../../hooks/useRecordedSkills.js'
+import { compactSearchParams, parsePositivePage } from '../../lib/listSearchParams.js'
 
 function PublishedJobCard({ job, to, overlapLabel }) {
   return (
@@ -79,17 +80,24 @@ function overlapLabelForJob(job, candidateSkills) {
 function CandidateJobsPage({ basePath, variant = 'student' }) {
   const isJobSeeker = variant === 'jobseeker'
   const recordedSkills = useRecordedSkills()
-  const [searchParams] = useSearchParams()
-  const initialQuery = (searchParams.get('q') || '').trim()
-  const initialLocation = (searchParams.get('location') || '').trim()
-  const [companyInput, setCompanyInput] = useState('')
-  const [locationInput, setLocationInput] = useState(initialLocation)
-  const [industryInput, setIndustryInput] = useState('')
-  const [employmentTypeInput, setEmploymentTypeInput] = useState('')
-  const [appliedCompany, setAppliedCompany] = useState('')
-  const [appliedLocation, setAppliedLocation] = useState(initialLocation)
-  const [appliedIndustry, setAppliedIndustry] = useState('')
-  const [appliedEmploymentType, setAppliedEmploymentType] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const appliedQuery = searchParams.get('q') || ''
+  const appliedCompany = searchParams.get('company') || ''
+  const appliedLocation = searchParams.get('location') || ''
+  const appliedIndustry = searchParams.get('industry') || ''
+  const appliedEmploymentType = searchParams.get('employmentType') || ''
+  const appliedPage = parsePositivePage(searchParams.get('page'))
+  const [companyInput, setCompanyInput] = useState(appliedCompany)
+  const [locationInput, setLocationInput] = useState(appliedLocation)
+  const [industryInput, setIndustryInput] = useState(appliedIndustry)
+  const [employmentTypeInput, setEmploymentTypeInput] = useState(appliedEmploymentType)
+
+  useEffect(() => {
+    setCompanyInput(appliedCompany)
+    setLocationInput(appliedLocation)
+    setIndustryInput(appliedIndustry)
+    setEmploymentTypeInput(appliedEmploymentType)
+  }, [appliedCompany, appliedEmploymentType, appliedIndustry, appliedLocation])
 
   const extraParams = useMemo(() => {
     const extra = {}
@@ -104,8 +112,13 @@ function CandidateJobsPage({ basePath, variant = 'student' }) {
     limit: JOB_LIST_LIMIT,
     extraParams,
     formatError: userFacingPublishedJobError,
-    initialQuery,
+    appliedQuery,
+    appliedPage,
   })
+
+  function writeParams(values) {
+    setSearchParams(compactSearchParams(values))
+  }
 
   const hasFilters = Boolean(
     list.input
@@ -125,11 +138,14 @@ function CandidateJobsPage({ basePath, variant = 'student' }) {
 
   function applyFilters(event) {
     event.preventDefault()
-    setAppliedCompany(companyInput.trim())
-    setAppliedLocation(locationInput.trim())
-    setAppliedIndustry(industryInput.trim())
-    setAppliedEmploymentType(employmentTypeInput)
-    list.search(event)
+    writeParams({
+      q: list.input.trim(),
+      company: companyInput.trim(),
+      location: locationInput.trim(),
+      industry: industryInput.trim(),
+      employmentType: employmentTypeInput,
+      page: 1,
+    })
   }
 
   function clearFilters() {
@@ -137,11 +153,7 @@ function CandidateJobsPage({ basePath, variant = 'student' }) {
     setLocationInput('')
     setIndustryInput('')
     setEmploymentTypeInput('')
-    setAppliedCompany('')
-    setAppliedLocation('')
-    setAppliedIndustry('')
-    setAppliedEmploymentType('')
-    list.resetSearch()
+    setSearchParams({})
   }
 
   return (
@@ -244,8 +256,22 @@ function CandidateJobsPage({ basePath, variant = 'student' }) {
             total={list.meta.total}
             noun="jobs"
             disabled={list.loading}
-            onPrevious={() => list.goToPage(list.page - 1)}
-            onNext={() => list.goToPage(list.page + 1)}
+            onPrevious={() => writeParams({
+              q: appliedQuery,
+              company: appliedCompany,
+              location: appliedLocation,
+              industry: appliedIndustry,
+              employmentType: appliedEmploymentType,
+              page: Math.max(1, appliedPage - 1),
+            })}
+            onNext={() => writeParams({
+              q: appliedQuery,
+              company: appliedCompany,
+              location: appliedLocation,
+              industry: appliedIndustry,
+              employmentType: appliedEmploymentType,
+              page: appliedPage + 1,
+            })}
           />
         </QueryStatus>
       </section>

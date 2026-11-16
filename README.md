@@ -11,6 +11,11 @@ npm run dev
 
 The app runs at `http://localhost:5173`.
 
+FYP freeze documentation:
+
+- [Demonstration guide](docs/FYP-DEMONSTRATION-GUIDE.md)
+- [Technical summary](docs/FYP-TECHNICAL-SUMMARY.md)
+
 ## Demonstration data
 
 The API can load a repeatable FYP demonstration dataset into the **local** PostgreSQL database without resetting it or touching non-demo users.

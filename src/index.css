@@ -74,6 +74,26 @@
 }
 
 @layer components {
+  .po-skip-link {
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    z-index: 80;
+    transform: translateY(-120%);
+    border-radius: var(--radius-md);
+    background-color: var(--color-primary);
+    color: #fff;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .po-skip-link:focus {
+    transform: translateY(0.75rem);
+    outline: 2px solid var(--color-primary-dark);
+    outline-offset: 2px;
+  }
+
   .po-display {
     font-size: 2.5rem;
     line-height: 1.15;

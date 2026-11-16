@@ -530,6 +530,15 @@ test('employer can invite a shortlisted candidate without changing application s
   });
   assert.equal(missingLink.response.status, 400);
 
+  const scriptLink = await createInterview(seeded.company.staffSession, onlineInvite(seeded.application.id, {
+    meetingLink: 'javascript:alert(1)',
+  }));
+  assert.equal(scriptLink.response.status, 400);
+  const httpLink = await createInterview(seeded.company.staffSession, onlineInvite(seeded.application.id, {
+    meetingLink: 'http://meet.example.com/insecure',
+  }));
+  assert.equal(httpLink.response.status, 400);
+
   const past = await createInterview(seeded.company.staffSession, onlineInvite(seeded.application.id, {
     scheduledStartAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
   }));

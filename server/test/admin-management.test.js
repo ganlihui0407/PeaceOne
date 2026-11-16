@@ -118,6 +118,7 @@ test('non-admin cannot access admin user, company, stats or report APIs', async 
     '/api/admin/stats',
     '/api/admin/reports',
     '/api/admin/content-monitoring',
+    '/api/admin/activity',
   ]) {
     const listed = await requestJson(baseUrl, path, { cookies: student.cookies });
     assert.equal(listed.response.status, 403, path);
@@ -273,7 +274,35 @@ test('dashboard and report aggregates match PostgreSQL counts', async () => {
   assert.equal(stats.json.learning.publishedCourses, publishedCourses);
   assert.equal(stats.json.learning.enrollments, enrollments);
   assert.equal(stats.json.learning.completed, completed);
+  assert.ok(Array.isArray(stats.json.recentActivity.items));
+  assert.equal(Number.isInteger(stats.json.recentActivity.total), true);
+  assert.equal(stats.json.recentActivity.page, 1);
+  for (const item of stats.json.recentActivity.items) {
+    assert.equal(typeof item.id, 'string');
+    assert.equal(typeof item.type, 'string');
+    assert.equal(typeof item.title, 'string');
+    assert.equal(typeof item.description, 'string');
+    assert.equal(typeof item.occurredAt, 'string');
+    assert.equal(item.description.includes('reviewNote'), false);
+    assert.equal(JSON.stringify(item).includes('passwordHash'), false);
+  }
   assertNoSecrets(stats.json);
+
+  const activity = await requestJson(baseUrl, '/api/admin/activity?page=1&limit=5', {
+    cookies: admin.cookies,
+  });
+  assert.equal(activity.response.status, 200, activity.text);
+  assert.ok(Array.isArray(activity.json.items));
+  assert.equal(activity.json.page, 1);
+  assert.equal(activity.json.limit, 5);
+  assert.equal(Number.isInteger(activity.json.total), true);
+  assert.equal(activity.json.total, stats.json.recentActivity.total);
+  for (const item of activity.json.items) {
+    assert.equal(typeof item.title, 'string');
+    assert.equal(typeof item.occurredAt, 'string');
+    assert.equal(item.description.includes('reviewNote'), false);
+  }
+  assertNoSecrets(activity.json);
 
   const reports = await requestJson(baseUrl, '/api/admin/reports', { cookies: admin.cookies });
   assert.equal(reports.response.status, 200, reports.text);

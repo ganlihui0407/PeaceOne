@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import Badge from '../../components/common/Badge.jsx'
 import Button from '../../components/common/Button.jsx'
 import Modal from '../../components/common/Modal.jsx'
+import PaginationBar from '../../components/common/PaginationBar.jsx'
 import QueryStatus from '../../components/common/QueryStatus.jsx'
 import Table from '../../components/common/Table.jsx'
 import Card from '../../components/cards/Card.jsx'
@@ -33,7 +34,7 @@ import {
   interviewStatusTone,
 } from '../../api/interviews.js'
 import { candidateJobPath, formatSalaryRange } from '../../api/jobs.js'
-import { fetchNotifications, formatNotificationTime } from '../../api/notifications.js'
+import { fetchRelatedNotifications, formatNotificationTime } from '../../api/notifications.js'
 
 function ApplicationDetailPage({ basePath }) {
   const { applicationId } = useParams()
@@ -46,6 +47,8 @@ function ApplicationDetailView({ basePath, applicationId }) {
   const [application, setApplication] = useState(null)
   const [interviews, setInterviews] = useState([])
   const [notifications, setNotifications] = useState([])
+  const [notificationMeta, setNotificationMeta] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
+  const [notificationPage, setNotificationPage] = useState(1)
   const [loading, setLoading] = useState(validId)
   const [error, setError] = useState('')
   const [notFound, setNotFound] = useState(!validId)
@@ -65,21 +68,29 @@ function ApplicationDetailView({ basePath, applicationId }) {
     Promise.all([
       fetchMyApplication(applicationId, { signal: controller.signal }),
       fetchMyInterviews({ applicationId, page: 1, limit: 20, signal: controller.signal }),
-      fetchNotifications({ page: 1, limit: 50, signal: controller.signal }).catch((notificationError) => {
+      fetchRelatedNotifications({
+        applicationId,
+        page: notificationPage,
+        limit: 20,
+        signal: controller.signal,
+      }).catch((notificationError) => {
         if (isAbortError(notificationError) || controller.signal.aborted) {
           throw notificationError
         }
-        return { items: [] }
+        return { items: [], page: 1, limit: 20, total: 0, totalPages: 0 }
       }),
     ])
-      .then(([next, interviewPage, notificationPage]) => {
+      .then(([next, interviewPage, relatedNotifications]) => {
         if (!controller.signal.aborted) {
           setApplication(next)
           setInterviews(interviewPage.items)
-          const relatedIds = new Set([next.id, ...interviewPage.items.map((item) => item.id)])
-          setNotifications(
-            notificationPage.items.filter((item) => relatedIds.has(item.relatedEntityId)),
-          )
+          setNotifications(relatedNotifications.items)
+          setNotificationMeta({
+            page: relatedNotifications.page,
+            limit: relatedNotifications.limit,
+            total: relatedNotifications.total,
+            totalPages: relatedNotifications.totalPages,
+          })
         }
       })
       .catch((loadError) => {
@@ -101,7 +112,7 @@ function ApplicationDetailView({ basePath, applicationId }) {
         }
       })
     return () => controller.abort()
-  }, [applicationId, retryNonce, validId])
+  }, [applicationId, notificationPage, retryNonce, validId])
 
   async function handleWithdraw() {
     if (!application || busy) {
@@ -234,18 +245,23 @@ function ApplicationDetailView({ basePath, applicationId }) {
 
               <Card>
                 <h2 className="po-section-title">Status history</h2>
-                <div className="mt-5">
-                  <Table
-                    minWidthClass="min-w-[520px]"
-                    headers={['From', 'To', 'When']}
-                    rows={(application.statusEvents || []).map((event) => [
-                      event.fromStatus ? formatApplicationStatus(event.fromStatus) : '—',
-                      formatApplicationStatus(event.toStatus),
-                      formatJobDateTime(event.createdAt),
-                    ])}
-                    emptyTitle="No status history is stored."
-                  />
-                </div>
+                {(application.statusEvents || []).length === 0 ? (
+                  <p className="po-secondary mt-4">No status history is stored.</p>
+                ) : (
+                  <ol className="mt-5 space-y-4 border-l border-line pl-5">
+                    {(application.statusEvents || []).map((event) => (
+                      <li key={event.id || `${event.toStatus}-${event.createdAt}`} className="relative">
+                        <span className="absolute -left-[1.45rem] mt-1.5 h-2.5 w-2.5 rounded-full bg-primary" aria-hidden="true" />
+                        <p className="po-card-title">
+                          {event.fromStatus
+                            ? `${formatApplicationStatus(event.fromStatus)} → ${formatApplicationStatus(event.toStatus)}`
+                            : formatApplicationStatus(event.toStatus)}
+                        </p>
+                        <p className="po-helper mt-1">{formatJobDateTime(event.createdAt)}</p>
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </Card>
 
               <Card>
@@ -261,7 +277,13 @@ function ApplicationDetailView({ basePath, applicationId }) {
                         {formatInterviewStatus(item.status)}
                       </Badge>,
                       item.meetingLink ? (
-                        <a key={`${item.id}-link`} href={item.meetingLink} className="text-sm font-medium text-primary">
+                        <a
+                          key={`${item.id}-link`}
+                          href={item.meetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-primary"
+                        >
                           Open meeting link
                         </a>
                       ) : (
@@ -289,6 +311,15 @@ function ApplicationDetailView({ basePath, applicationId }) {
                     headers={['Title', 'When']}
                     rows={notifications.map((item) => [item.title, formatNotificationTime(item.createdAt)])}
                     emptyTitle="No related notifications are stored for this application."
+                  />
+                  <PaginationBar
+                    page={notificationMeta.page}
+                    totalPages={notificationMeta.totalPages}
+                    total={notificationMeta.total}
+                    noun="related notifications"
+                    disabled={loading}
+                    onPrevious={() => setNotificationPage((current) => Math.max(1, current - 1))}
+                    onNext={() => setNotificationPage((current) => current + 1)}
                   />
                 </div>
               </Card>

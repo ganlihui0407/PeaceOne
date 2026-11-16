@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ESCO_LIST_LIMIT, isAbortError, userFacingLoadError } from '../api/esco.js'
 
-export function useEscoPagedSearch(fetcher, { limit = ESCO_LIST_LIMIT, extraParams, formatError, initialQuery = '' } = {}) {
-  const [input, setInput] = useState(initialQuery)
-  const [query, setQuery] = useState(initialQuery.trim())
-  const [page, setPage] = useState(1)
+export function useEscoPagedSearch(fetcher, {
+  limit = ESCO_LIST_LIMIT,
+  extraParams,
+  formatError,
+  initialQuery = '',
+  appliedQuery,
+  appliedPage,
+} = {}) {
+  const queryIsControlled = appliedQuery !== undefined
+  const pageIsControlled = Number.isInteger(appliedPage) && appliedPage > 0
+  const [input, setInput] = useState(queryIsControlled ? appliedQuery : initialQuery)
+  const [query, setQuery] = useState((queryIsControlled ? appliedQuery : initialQuery).trim())
+  const [page, setPage] = useState(pageIsControlled ? appliedPage : 1)
   const [items, setItems] = useState([])
   const [meta, setMeta] = useState({ page: 1, limit, total: 0, totalPages: 0 })
   const [loading, setLoading] = useState(true)
@@ -64,16 +73,31 @@ export function useEscoPagedSearch(fetcher, { limit = ESCO_LIST_LIMIT, extraPara
   )
 
   useEffect(() => {
+    if (!queryIsControlled) {
+      return
+    }
+    setInput(appliedQuery)
+    setQuery(appliedQuery.trim())
+  }, [appliedQuery, queryIsControlled])
+
+  useEffect(() => {
+    if (!pageIsControlled) {
+      return
+    }
+    setPage(appliedPage)
+  }, [appliedPage, pageIsControlled])
+
+  useEffect(() => {
     if (extraKeyRef.current !== extraKey) {
       extraKeyRef.current = extraKey
-      if (page !== 1) {
+      if (!pageIsControlled && page !== 1) {
         setPage(1)
         return
       }
     }
     void load(query, page)
     return () => abortRef.current?.abort()
-  }, [extraKey, load, page, query])
+  }, [extraKey, load, page, pageIsControlled, query])
 
   function search(event) {
     event?.preventDefault()

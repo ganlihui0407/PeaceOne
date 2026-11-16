@@ -304,6 +304,17 @@ export async function fetchNotifications({ unread, page, limit, signal } = {}) {
   return parseNotificationPage(payload)
 }
 
+export async function fetchRelatedNotifications({ applicationId, page, limit, signal } = {}) {
+  if (!isNotificationId(applicationId)) {
+    throw new ApiError('Invalid request', 400)
+  }
+  const payload = await requestNotifications(
+    `/api/me/notifications/related${buildSearchParams({ applicationId, page, limit })}`,
+    { signal },
+  )
+  return parseNotificationPage(payload)
+}
+
 export async function fetchUnreadNotificationCount({ signal } = {}) {
   const payload = await requestNotifications('/api/me/notifications/unread-count', { signal })
   return parseUnreadCount(payload)

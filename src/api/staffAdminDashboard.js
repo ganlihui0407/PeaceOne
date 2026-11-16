@@ -78,8 +78,9 @@ export const ADMIN_LEARNING_UNAVAILABLE = {
 }
 
 export const ADMIN_ACTIVITY_UNAVAILABLE = {
-  title: 'Platform activity is not connected yet.',
-  description: 'PeaceOne does not record administrative activity, notifications or pending tasks yet.',
+  title: 'No recent platform events yet.',
+  description:
+    'Registrations, published jobs, applications, interview invitations, offers and course completions appear here from stored PostgreSQL records.',
 }
 
 export const ADMIN_SHORTCUTS = [

@@ -25,6 +25,8 @@ async function snapshot(connectionString) {
         (SELECT COUNT(*)::int FROM learning_lesson_progress) AS learning_lesson_progress,
         (SELECT COUNT(*)::int FROM learning_attempts) AS learning_attempts,
         (SELECT COUNT(*)::int FROM user_skills) AS user_skills,
+        (SELECT COUNT(*)::int FROM resumes) AS resumes,
+        (SELECT COUNT(*)::int FROM resume_files) AS resume_files,
         (SELECT COUNT(*)::int FROM occupations) AS occupations,
         (SELECT COUNT(*)::int FROM skills) AS skills
     `);

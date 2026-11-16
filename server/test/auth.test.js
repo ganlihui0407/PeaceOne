@@ -215,12 +215,18 @@ test('login succeeds, ignores client role, and uses generic errors', async () =>
 
   const primed = await primeCsrf();
   const sessionBefore = cookieValue(primed.cookies, sessionCookieName);
+  const spoofedRole = await postAuth('/api/auth/login', await primeCsrf(), {
+    email,
+    password: TEST_PASSWORD,
+    role: 'admin',
+    demoRole: 'admin',
+  });
+  assert.equal(spoofedRole.response.status, 400);
+
   const success = await postAuth('/api/auth/login', primed, {
     email,
     password: TEST_PASSWORD,
     rememberMe: false,
-    role: 'admin',
-    demoRole: 'admin',
   });
   assert.equal(success.response.status, 200);
   assert.equal(success.json.user.role, 'STUDENT');

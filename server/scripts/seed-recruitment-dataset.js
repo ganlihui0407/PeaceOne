@@ -43,6 +43,10 @@ try {
   for (const [key, value] of Object.entries(result.integrity.totals)) {
     console.log(`  ${key}: ${value}`);
   }
+  console.log('\nCatalogue coverage');
+  for (const [key, value] of Object.entries(result.integrity.catalog)) {
+    console.log(`  ${key}: ${value}`);
+  }
   console.log('\nApplication statuses');
   console.log(JSON.stringify(result.integrity.statuses, null, 2));
   console.log(`\nESCO JobSkill mappings: ${result.mappings.length}`);

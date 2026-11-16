@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Button from '../../components/common/Button.jsx'
 import JobCard from '../../components/cards/JobCard.jsx'
 import PaginationBar from '../../components/common/PaginationBar.jsx'
@@ -14,14 +15,25 @@ import {
   userFacingPublishedJobError,
 } from '../../api/jobs.js'
 import { useEscoPagedSearch } from '../../hooks/useEscoPagedSearch.js'
+import { compactSearchParams, parsePositivePage } from '../../lib/listSearchParams.js'
 
 function Jobs() {
-  const [companyInput, setCompanyInput] = useState('')
-  const [locationInput, setLocationInput] = useState('')
-  const [employmentTypeInput, setEmploymentTypeInput] = useState('')
-  const [appliedCompany, setAppliedCompany] = useState('')
-  const [appliedLocation, setAppliedLocation] = useState('')
-  const [appliedEmploymentType, setAppliedEmploymentType] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const appliedQuery = searchParams.get('q') || ''
+  const appliedCompany = searchParams.get('company') || ''
+  const appliedLocation = searchParams.get('location') || ''
+  const appliedEmploymentType = searchParams.get('employmentType') || ''
+  const appliedPage = parsePositivePage(searchParams.get('page'))
+  const [companyInput, setCompanyInput] = useState(appliedCompany)
+  const [locationInput, setLocationInput] = useState(appliedLocation)
+  const [employmentTypeInput, setEmploymentTypeInput] = useState(appliedEmploymentType)
+
+  useEffect(() => {
+    setCompanyInput(appliedCompany)
+    setLocationInput(appliedLocation)
+    setEmploymentTypeInput(appliedEmploymentType)
+  }, [appliedCompany, appliedEmploymentType, appliedLocation])
+
   const extraParams = useMemo(
     () => ({
       company: appliedCompany || undefined,
@@ -34,11 +46,13 @@ function Jobs() {
     limit: JOB_LIST_LIMIT,
     extraParams,
     formatError: userFacingPublishedJobError,
+    appliedQuery,
+    appliedPage,
   })
 
   const hasFilters = Boolean(
     list.input
-      || list.query
+      || appliedQuery
       || companyInput
       || appliedCompany
       || locationInput
@@ -47,22 +61,26 @@ function Jobs() {
       || appliedEmploymentType,
   )
 
+  function writeParams(values) {
+    setSearchParams(compactSearchParams(values))
+  }
+
   function handleSearch(event) {
     event.preventDefault()
-    setAppliedCompany(companyInput.trim())
-    setAppliedLocation(locationInput.trim())
-    setAppliedEmploymentType(employmentTypeInput)
-    list.search(event)
+    writeParams({
+      q: list.input.trim(),
+      company: companyInput.trim(),
+      location: locationInput.trim(),
+      employmentType: employmentTypeInput,
+      page: 1,
+    })
   }
 
   function clearFilters() {
     setCompanyInput('')
     setLocationInput('')
     setEmploymentTypeInput('')
-    setAppliedCompany('')
-    setAppliedLocation('')
-    setAppliedEmploymentType('')
-    list.resetSearch()
+    setSearchParams({})
   }
 
   return (
@@ -149,8 +167,20 @@ function Jobs() {
             total={list.meta.total}
             noun="jobs"
             disabled={list.loading}
-            onPrevious={() => list.goToPage(list.page - 1)}
-            onNext={() => list.goToPage(list.page + 1)}
+            onPrevious={() => writeParams({
+              q: appliedQuery,
+              company: appliedCompany,
+              location: appliedLocation,
+              employmentType: appliedEmploymentType,
+              page: Math.max(1, appliedPage - 1),
+            })}
+            onNext={() => writeParams({
+              q: appliedQuery,
+              company: appliedCompany,
+              location: appliedLocation,
+              employmentType: appliedEmploymentType,
+              page: appliedPage + 1,
+            })}
           />
         </QueryStatus>
       </div>

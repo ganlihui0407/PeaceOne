@@ -237,6 +237,9 @@ test('public job pages do not import static job fixtures', () => {
   assert.equal(publicList.includes('Clear filters'), true)
   assert.equal(publicList.includes('job-company'), true)
   assert.equal(publicList.includes('employmentType'), true)
+  assert.equal(publicList.includes('compactSearchParams'), true)
+  assert.equal(publicList.includes('appliedQuery'), true)
+  assert.equal(publicList.includes('appliedPage'), true)
 })
 
 test('fetchPublishedJobs treats an empty published list as valid', async () => {
@@ -579,7 +582,8 @@ test('candidate job pages load live published jobs and drop mock records', () =>
   assert.equal(details.includes('Applications are not available in this stage'), false)
   assert.equal(list.includes('useRecordedSkills'), true)
   assert.equal(list.includes('useSearchParams'), true)
-  assert.equal(list.includes('initialQuery'), true)
+  assert.equal(list.includes('compactSearchParams'), true)
+  assert.equal(list.includes('appliedQuery'), true)
   assert.equal(list.includes('% Match'), false)
   assert.equal(apply.includes('getCandidateJob'), false)
   assert.equal(apply.includes('submitJobApplication'), true)
@@ -592,4 +596,6 @@ test('candidate job pages load live published jobs and drop mock records', () =>
   assert.equal(app.includes('<CandidateJobsPage basePath="/jobseeker"'), true)
   assert.equal(app.includes('<CandidateJobDetailPage basePath="/student"'), true)
   assert.equal(app.includes('<CandidateJobDetailPage basePath="/jobseeker"'), true)
+  assert.equal(app.includes('lazy(() => import'), true)
+  assert.equal(app.includes('Suspense'), true)
 })

@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import { prisma } from '../db.js';
 import {
+  adminActivityQuerySchema,
   listAdminContentMonitoring,
   listAdminPlatformStats,
+  listAdminRecentActivity,
   listAdminReports,
 } from '../lib/adminPlatformQuery.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/requireAuth.js';
+import { validateQuery } from '../middleware/validate.js';
 
 export const adminStatsRouter = Router();
 adminStatsRouter.use(requireAuth, requireRole('ADMIN'));
@@ -24,6 +27,17 @@ adminReportsRouter.get(
   '/',
   asyncHandler(async (_req, res) => {
     const payload = await listAdminReports(prisma);
+    res.status(200).json(payload);
+  }),
+);
+
+export const adminActivityRouter = Router();
+adminActivityRouter.use(requireAuth, requireRole('ADMIN'));
+adminActivityRouter.get(
+  '/',
+  validateQuery(adminActivityQuerySchema),
+  asyncHandler(async (req, res) => {
+    const payload = await listAdminRecentActivity(prisma, req.validatedQuery);
     res.status(200).json(payload);
   }),
 );

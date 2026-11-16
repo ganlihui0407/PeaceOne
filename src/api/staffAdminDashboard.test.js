@@ -352,7 +352,7 @@ test('staff and admin dashboards stay empty when the signed-in profile has no ex
   assert.equal(ADMIN_JOBS_UNAVAILABLE.title.includes('not connected'), false)
   assert.equal(ADMIN_JOBS_UNAVAILABLE.title.includes('Job Monitoring'), true)
   assert.equal(ADMIN_LEARNING_UNAVAILABLE.title.includes('PostgreSQL'), true)
-  assert.equal(ADMIN_ACTIVITY_UNAVAILABLE.title.includes('not connected'), true)
+  assert.equal(ADMIN_ACTIVITY_UNAVAILABLE.title.includes('No recent platform events'), true)
   assert.equal(STAFF_PROFILE_INCOMPLETE.description.includes('Empty fields stay empty'), true)
   assert.deepEqual(
     ADMIN_SHORTCUTS.map((item) => item.to),
@@ -400,6 +400,7 @@ test('employer and admin dashboards use signed-in profile data and drop mock rec
   const jobSeeker = readFileSync(fileURLToPath(new URL('../pages/jobseeker/Dashboard.jsx', import.meta.url)), 'utf8')
   const company = readFileSync(fileURLToPath(new URL('../pages/employer/CompanyProfile.jsx', import.meta.url)), 'utf8')
   const api = readFileSync(fileURLToPath(new URL('./staffAdminDashboard.js', import.meta.url)), 'utf8')
+  const adminPlatform = readFileSync(fileURLToPath(new URL('./adminPlatform.js', import.meta.url)), 'utf8')
 
   assert.equal(employer.includes('useStaffDashboard'), true)
   assert.equal(admin.includes('useAdminDashboard'), true)
@@ -451,11 +452,18 @@ test('employer and admin dashboards use signed-in profile data and drop mock rec
   assert.equal(employer.includes('Applicants and interviews are not stored yet'), false)
   assert.equal(panels.includes('ADMIN_USERS_UNAVAILABLE'), true)
   assert.equal(panels.includes('ADMIN_ACTIVITY_UNAVAILABLE'), true)
+  assert.equal(panels.includes('AdminRecentActivitySection'), true)
+  assert.equal(panels.includes('fetchAdminRecentActivity'), true)
+  assert.equal(panels.includes('PaginationBar'), true)
   assert.equal(employer.includes('Create Job Posting'), true)
   assert.equal(admin.includes('AdminApplicationStatsSection'), true)
   assert.equal(admin.includes('AdminInterviewStatsSection'), true)
   assert.equal(admin.includes('AdminPlatformStatsSection'), true)
   assert.equal(admin.includes('AdminShortcutsSection'), true)
+  assert.equal(admin.includes('AdminRecentActivitySection'), true)
+  assert.equal(admin.includes('AdminActivityUnavailableSection'), false)
+  assert.equal(adminPlatform.includes('fetchAdminRecentActivity'), true)
+  assert.equal(adminPlatform.includes('/api/admin/activity'), true)
 
   assert.equal(app.includes('<EmployerDashboard />'), true)
   assert.equal(app.includes('<AdminDashboard />'), true)
