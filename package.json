@@ -30,7 +30,9 @@
     "db:seed:demo": "npm run db:seed:demo --prefix server",
     "db:seed:learning": "npm run db:seed:learning --prefix server",
     "db:seed:learning-progress": "npm run db:seed:learning-progress --prefix server",
-    "db:seed:recruitment:dataset": "npm run db:seed:recruitment:dataset --prefix server"
+    "db:seed:recruitment:dataset": "npm run db:seed:recruitment:dataset --prefix server",
+    "db:seed:presentation:demo": "npm run db:seed:presentation:demo --prefix server",
+    "db:prepare:peaceone:dry-run": "npm run db:prepare:peaceone:dry-run --prefix server"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

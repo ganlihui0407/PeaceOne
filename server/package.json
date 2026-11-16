@@ -9,7 +9,7 @@
         "dev": "node --watch src/index.js",
         "prisma:validate": "prisma validate",
         "prisma:migrate": "prisma migrate dev",
-        "test": "node --import ./test/setup.js --test --test-concurrency=1 test/database-safety.test.js test/session-csrf.test.js test/auth.test.js test/authorization.test.js test/security.test.js test/rate-limit.test.js test/esco-csv.test.js test/esco-import.test.js test/esco-query.test.js test/esco-api.test.js test/search-filter-quality.test.js test/user-skills-api.test.js test/skill-gap-query.test.js test/skill-gap-api.test.js test/career-target-api.test.js test/masco-api.test.js test/masco-crosswalk-api.test.js test/me-profile-api.test.js test/position-change-request-api.test.js test/company-api.test.js test/resume-api.test.js test/resume-storage.test.js test/resume-file.test.js test/resume-file-validation.test.js test/resume-upload.test.js test/resume-download.test.js test/resume-text-extraction.test.js test/resume-skill-matcher.test.js test/resume-extraction-api.test.js test/resume-templates.test.js test/resume-pdf-api.test.js test/job-api.test.js test/application-api.test.js test/employer-applicant-management.test.js test/interview-api.test.js test/notification-api.test.js test/learning-api.test.js test/demo-learning-catalog.test.js test/learning-dataset.test.js test/recruitment-dataset.test.js test/admin-management.test.js",
+        "test": "node --import ./test/setup.js --test --test-concurrency=1 test/database-safety.test.js test/session-csrf.test.js test/auth.test.js test/authorization.test.js test/security.test.js test/rate-limit.test.js test/esco-csv.test.js test/esco-import.test.js test/esco-query.test.js test/esco-api.test.js test/search-filter-quality.test.js test/user-skills-api.test.js test/skill-gap-query.test.js test/skill-gap-api.test.js test/career-target-api.test.js test/masco-api.test.js test/masco-crosswalk-api.test.js test/me-profile-api.test.js test/position-change-request-api.test.js test/company-api.test.js test/resume-api.test.js test/resume-storage.test.js test/resume-file.test.js test/resume-file-validation.test.js test/resume-upload.test.js test/resume-download.test.js test/resume-text-extraction.test.js test/resume-skill-matcher.test.js test/resume-extraction-api.test.js test/resume-templates.test.js test/resume-pdf-api.test.js test/job-api.test.js test/application-api.test.js test/employer-applicant-management.test.js test/interview-api.test.js test/notification-api.test.js test/learning-api.test.js test/demo-learning-catalog.test.js test/learning-dataset.test.js test/recruitment-dataset.test.js test/presentation-demo-dataset.test.js test/peaceone-presentation-expansion.test.js test/admin-management.test.js",
         "test:db:init": "node scripts/init-test-database.js",
         "test:db:safety": "node --import ./test/setup.js --test --test-concurrency=1 test/database-safety.test.js",
         "test:admin": "node --import ./test/setup.js --test --test-concurrency=1 test/admin-management.test.js",
@@ -40,7 +40,12 @@
         "db:seed:learning-progress": "node scripts/seed-learning-progress.js",
         "db:seed:learning:dataset": "node scripts/seed-learning-dataset.js",
         "db:seed:recruitment:dataset": "node scripts/seed-recruitment-dataset.js",
-        "test:recruitment": "node --import ./test/setup.js --test --test-concurrency=1 test/recruitment-dataset.test.js"
+        "db:seed:presentation:demo": "node scripts/seed-presentation-demo-dataset.js",
+        "db:prepare:peaceone:dry-run": "node scripts/prepare-peaceone-presentation-expansion.js",
+        "db:seed:peaceone:presentation": "node scripts/seed-peaceone-presentation-expansion.js",
+        "db:backup:peaceone": "node scripts/backup-peaceone-presentation.js",
+        "test:recruitment": "node --import ./test/setup.js --test --test-concurrency=1 test/recruitment-dataset.test.js",
+        "test:presentation-demo": "node --import ./test/setup.js --test --test-concurrency=1 test/presentation-demo-dataset.test.js"
     },
     "engines": {
         "node": ">=20"

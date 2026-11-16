@@ -403,12 +403,13 @@ export async function seedLearningDataset(prisma, { includeDemoProgress = true }
     await completeLessons(prisma, graduate.id, graduateCourse.lessons.slice(0, 2), counts);
   }
 
+  const catalogSlugs = LEARNING_DATASET_COURSES.map((item) => item.slug);
   const totals = {
-    courses: await prisma.learningContent.count({ where: { slug: { startsWith: 'peaceone-demo-' } } }),
-    lessons: await prisma.learningLesson.count({ where: { content: { slug: { startsWith: 'peaceone-demo-' } } } }),
-    assessments: await prisma.learningAssessment.count({ where: { content: { slug: { startsWith: 'peaceone-demo-' } } } }),
-    questions: await prisma.learningQuestion.count({ where: { assessment: { content: { slug: { startsWith: 'peaceone-demo-' } } } } }),
-    courseSkills: await prisma.learningContentSkill.count({ where: { content: { slug: { startsWith: 'peaceone-demo-' } } } }),
+    courses: await prisma.learningContent.count({ where: { slug: { in: catalogSlugs } } }),
+    lessons: await prisma.learningLesson.count({ where: { content: { slug: { in: catalogSlugs } } } }),
+    assessments: await prisma.learningAssessment.count({ where: { content: { slug: { in: catalogSlugs } } } }),
+    questions: await prisma.learningQuestion.count({ where: { assessment: { content: { slug: { in: catalogSlugs } } } } }),
+    courseSkills: await prisma.learningContentSkill.count({ where: { content: { slug: { in: catalogSlugs } } } }),
   };
 
   return { counts, mappings, totals };
